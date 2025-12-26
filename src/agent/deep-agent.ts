@@ -1,4 +1,10 @@
-import { ToolLoopAgent, stepCountIs, type TypedToolResult } from "ai";
+import {
+  ToolLoopAgent,
+  gateway,
+  stepCountIs,
+  wrapLanguageModel,
+  type TypedToolResult,
+} from "ai";
 import { z } from "zod";
 import {
   todoWriteTool,
@@ -13,30 +19,36 @@ import {
   memoryRecallTool,
 } from "./tools";
 import { buildSystemPrompt } from "./system-prompt";
-import {
-  formatTodosForContext,
-  formatScratchpadForContext,
-} from "./state";
+import { formatTodosForContext, formatScratchpadForContext } from "./state";
 import type { TodoItem, ScratchpadEntry } from "./types";
 import { todoItemSchema } from "./types";
+import { devToolsMiddleware } from "@ai-sdk/devtools";
 
 const callOptionsSchema = z.object({
   workingDirectory: z.string().optional(),
   customInstructions: z.string().optional(),
   todos: z.array(todoItemSchema).optional(),
-  scratchpad: z.map(z.string(), z.object({
-    path: z.string(),
-    content: z.string(),
-    createdAt: z.number(),
-    updatedAt: z.number(),
-    size: z.number(),
-  })).optional(),
+  scratchpad: z
+    .map(
+      z.string(),
+      z.object({
+        path: z.string(),
+        content: z.string(),
+        createdAt: z.number(),
+        updatedAt: z.number(),
+        size: z.number(),
+      }),
+    )
+    .optional(),
 });
 
 export type DeepAgentCallOptions = z.infer<typeof callOptionsSchema>;
 
 export const deepAgent = new ToolLoopAgent({
-  model: "anthropic/claude-haiku-4.5",
+  model: wrapLanguageModel({
+    middleware: devToolsMiddleware(),
+    model: gateway("anthropic/claude-haiku-4.5"),
+  }),
   instructions: buildSystemPrompt({}),
   tools: {
     todo_write: todoWriteTool,
@@ -56,7 +68,8 @@ export const deepAgent = new ToolLoopAgent({
     const workingDirectory = options?.workingDirectory ?? process.cwd();
     const customInstructions = options?.customInstructions;
     const todos = options?.todos ?? [];
-    const scratchpad = options?.scratchpad ?? new Map<string, ScratchpadEntry>();
+    const scratchpad =
+      options?.scratchpad ?? new Map<string, ScratchpadEntry>();
 
     const todosContext = formatTodosForContext(todos);
     const scratchpadContext = formatScratchpadForContext(scratchpad);
@@ -73,10 +86,12 @@ export const deepAgent = new ToolLoopAgent({
   },
 });
 
-export function extractTodosFromStep(toolResults: Array<TypedToolResult<typeof deepAgent.tools>>): TodoItem[] | null {
+export function extractTodosFromStep(
+  toolResults: Array<TypedToolResult<typeof deepAgent.tools>>,
+): TodoItem[] | null {
   for (const result of toolResults) {
     if (!result.dynamic && result.toolName === "todo_write" && result.output) {
-        return result.output.todos;
+      return result.output.todos;
     }
   }
   return null;
