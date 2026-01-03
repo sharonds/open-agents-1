@@ -4,7 +4,7 @@ import { readFileTool } from "../../file-system/read";
 import { grepTool } from "../../file-system/grep";
 import { globTool } from "../../file-system/glob";
 import { bashTool, commandNeedsApproval } from "../../file-system/bash";
-import { createLocalSandbox, type Sandbox } from "../../../sandbox";
+import type { Sandbox } from "../../../sandbox";
 
 const EXPLORER_SYSTEM_PROMPT = `You are an explorer agent - a fast, read-only subagent specialized for exploring codebases.
 
@@ -56,9 +56,8 @@ You have access to: read, grep, glob, bash (read-only commands only)
 
 const callOptionsSchema = z.object({
   task: z.string().describe("Short description of the exploration task"),
-  cwd: z.string().describe("Working directory for the subagent"),
   instructions: z.string().describe("Detailed instructions for the exploration"),
-  sandbox: z.custom<Sandbox>().optional().describe("Sandbox for file system and shell operations"),
+  sandbox: z.custom<Sandbox>().describe("Sandbox for file system and shell operations"),
 });
 
 export type ExplorerCallOptions = z.infer<typeof callOptionsSchema>;
@@ -79,7 +78,7 @@ export const explorerSubagent = new ToolLoopAgent({
   stopWhen: stepCountIs(30),
   callOptionsSchema,
   prepareCall: ({ options, ...settings }) => {
-    const sandbox = options.sandbox ?? createLocalSandbox(options.cwd);
+    const sandbox = options.sandbox;
     return {
       ...settings,
       instructions: `${EXPLORER_SYSTEM_PROMPT}

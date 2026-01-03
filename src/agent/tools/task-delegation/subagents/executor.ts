@@ -5,7 +5,7 @@ import { writeFileTool, editFileTool } from "../../file-system/write";
 import { grepTool } from "../../file-system/grep";
 import { globTool } from "../../file-system/glob";
 import { bashTool, commandNeedsApproval } from "../../file-system/bash";
-import { createLocalSandbox, type Sandbox } from "../../../sandbox";
+import type { Sandbox } from "../../../sandbox";
 
 const EXECUTOR_SYSTEM_PROMPT = `You are an executor agent - a fire-and-forget subagent that completes specific, well-defined implementation tasks autonomously.
 
@@ -45,9 +45,8 @@ You have full access to file operations (read, write, edit, grep, glob) and bash
 
 const callOptionsSchema = z.object({
   task: z.string().describe("Short description of the task"),
-  cwd: z.string().describe("Working directory for the subagent"),
   instructions: z.string().describe("Detailed instructions for the task"),
-  sandbox: z.custom<Sandbox>().optional().describe("Sandbox for file system and shell operations"),
+  sandbox: z.custom<Sandbox>().describe("Sandbox for file system and shell operations"),
 });
 
 export type ExecutorCallOptions = z.infer<typeof callOptionsSchema>;
@@ -70,7 +69,7 @@ export const executorSubagent = new ToolLoopAgent({
   stopWhen: stepCountIs(30),
   callOptionsSchema,
   prepareCall: ({ options, ...settings }) => {
-    const sandbox = options.sandbox ?? createLocalSandbox(options.cwd);
+    const sandbox = options.sandbox;
     return {
       ...settings,
       instructions: `${EXECUTOR_SYSTEM_PROMPT}

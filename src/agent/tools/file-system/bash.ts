@@ -3,7 +3,6 @@ import { z } from "zod";
 import * as path from "path";
 import type { AgentContext } from "../../types";
 import { isPathWithinDirectory } from "../../utils";
-import { createLocalSandbox } from "../../sandbox";
 
 const TIMEOUT_MS = 120_000;
 
@@ -133,8 +132,8 @@ EXAMPLES:
 - List files in src: command: "ls -la", cwd: "/Users/username/project/src"`,
   inputSchema: bashInputSchema,
   execute: async ({ command, cwd }, { experimental_context }) => {
-    const context = experimental_context as AgentContext | undefined;
-    const sandbox = context?.sandbox ?? createLocalSandbox(process.cwd());
+    const context = experimental_context as AgentContext;
+    const sandbox = context.sandbox;
     const workingDirectory = sandbox.workingDirectory;
 
     // Resolve the working directory

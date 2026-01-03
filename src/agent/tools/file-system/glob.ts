@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import * as path from "path";
 import type { AgentContext } from "../../types";
-import { createLocalSandbox, type Sandbox } from "../../sandbox";
+import type { Sandbox } from "../../sandbox";
 import { isPathWithinDirectory } from "../../utils";
 
 interface FileInfo {
@@ -132,8 +132,8 @@ EXAMPLES:
       .describe("Maximum number of results. Default: 100"),
   }),
   execute: async ({ pattern, path: basePath, limit = 100 }, { experimental_context }) => {
-    const context = experimental_context as AgentContext | undefined;
-    const sandbox = context?.sandbox ?? createLocalSandbox(process.cwd());
+    const context = experimental_context as AgentContext;
+    const sandbox = context.sandbox;
     const workingDirectory = sandbox.workingDirectory;
 
     try {

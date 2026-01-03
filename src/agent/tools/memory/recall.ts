@@ -2,7 +2,6 @@ import { tool } from "ai";
 import { z } from "zod";
 import { searchMemory, getRecentMemories } from "../../state/memory-store";
 import type { AgentContext } from "../../types";
-import { createLocalSandbox } from "../../sandbox";
 
 export const memoryRecallTool = tool({
   description: `Retrieve information from long-term memory for the current workspace/project.
@@ -44,8 +43,8 @@ EXAMPLES:
   }),
   execute: async ({ query, tags, limit = 10 }, { experimental_context }) => {
     try {
-      const context = experimental_context as AgentContext | undefined;
-      const sandbox = context?.sandbox ?? createLocalSandbox(process.cwd());
+      const context = experimental_context as AgentContext;
+      const sandbox = context.sandbox;
       const workingDirectory = sandbox.workingDirectory;
 
       let entries;
