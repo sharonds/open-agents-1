@@ -4,6 +4,25 @@ import { Box, Text } from "ink";
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const SPINNER_INTERVAL = 80;
 
+const SILLY_WORDS = [
+  "Thinking",
+  "Pondering",
+  "Cogitating",
+  "Ruminating",
+  "Mulling",
+  "Noodling",
+  "Smooshing",
+  "Percolating",
+  "Marinating",
+  "Simmering",
+  "Brewing",
+  "Conjuring",
+  "Manifesting",
+  "Vibing",
+  "Channeling",
+];
+const SILLY_WORD_INTERVAL = 2000;
+
 function Spinner() {
   const [frame, setFrame] = useState(0);
 
@@ -15,6 +34,19 @@ function Spinner() {
   }, []);
 
   return <Text color="yellow">{SPINNER_FRAMES[frame]} </Text>;
+}
+
+function useSillyWord() {
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * SILLY_WORDS.length));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % SILLY_WORDS.length);
+    }, SILLY_WORD_INTERVAL);
+    return () => clearInterval(timer);
+  }, []);
+
+  return SILLY_WORDS[index];
 }
 
 type StatusBarProps = {
@@ -40,11 +72,15 @@ function StatusIndicator({
   isStreaming: boolean;
   status?: string;
 }) {
+  const sillyWord = useSillyWord();
+  const isDefaultStatus = !status || status === "Thinking...";
+  const displayStatus = isDefaultStatus ? `${sillyWord}...` : status;
+
   if (isStreaming) {
     return (
       <>
         <Spinner />
-        <Text color="yellow">{status || "Thinking..."}</Text>
+        <Text color="yellow">{displayStatus}</Text>
       </>
     );
   }
