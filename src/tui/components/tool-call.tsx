@@ -336,7 +336,7 @@ function ToolLayout({
           {name}
         </Text>
         <Text color="gray">(</Text>
-        <Text color="cyan">{summary}</Text>
+        <Text color="white">{summary}</Text>
         <Text color="gray">)</Text>
       </Box>
 
@@ -422,7 +422,7 @@ function FileChangeLayout({
           {action}
         </Text>
         <Text color="gray">(</Text>
-        <Text color="cyan">{filePath}</Text>
+        <Text color="white">{filePath}</Text>
         <Text color="gray">)</Text>
       </Box>
 
@@ -638,7 +638,7 @@ export function SubagentToolCall({
         {summary && (
           <>
             <Text color="gray">(</Text>
-            <Text color="cyan">{summary}</Text>
+            <Text color="white">{summary}</Text>
             <Text color="gray">)</Text>
           </>
         )}
@@ -657,6 +657,17 @@ export function ToolCall({
   activeApprovalId: string | null;
   isExpanded?: boolean;
 }) {
+  const { state } = useChatContext();
+  const cwd = state.workingDirectory ?? process.cwd();
+
+  // Helper to convert file path to relative
+  const toRelativePath = (filePath: string): string => {
+    const absolutePath = path.isAbsolute(filePath)
+      ? filePath
+      : path.resolve(cwd, filePath);
+    return path.relative(cwd, absolutePath);
+  };
+
   const running =
     part.state === "input-streaming" || part.state === "input-available";
   const approval = part.approval;
@@ -672,7 +683,8 @@ export function ToolCall({
 
   switch (part.type) {
     case "tool-read": {
-      const filePath = part.input?.filePath ?? "...";
+      const rawFilePath = part.input?.filePath ?? "...";
+      const filePath = rawFilePath === "..." ? rawFilePath : toRelativePath(rawFilePath);
       const lines =
         part.state === "output-available" ? part.output?.totalLines : undefined;
       return (
@@ -687,7 +699,8 @@ export function ToolCall({
     }
 
     case "tool-write": {
-      const filePath = part.input?.filePath ?? "...";
+      const rawFilePath = part.input?.filePath ?? "...";
+      const filePath = rawFilePath === "..." ? rawFilePath : toRelativePath(rawFilePath);
       const content = part.input?.content ?? "";
       const lines = createWriteDiffLines(content);
       const additions = content ? content.split("\n").length : 0;
@@ -717,7 +730,8 @@ export function ToolCall({
     }
 
     case "tool-edit": {
-      const filePath = part.input?.filePath ?? "...";
+      const rawFilePath = part.input?.filePath ?? "...";
+      const filePath = rawFilePath === "..." ? rawFilePath : toRelativePath(rawFilePath);
       const oldString = part.input?.oldString ?? "";
       const newString = part.input?.newString ?? "";
       const { lines, additions, removals } = createEditDiffLines(
@@ -831,7 +845,7 @@ export function ToolCall({
               Bash
             </Text>
             <Text color="gray">(</Text>
-            <Text color="cyan">
+            <Text color="white">
               {command.length > 60
                 ? command.slice(0, 60) + "…"
                 : command || "..."}
@@ -1046,7 +1060,7 @@ export function ToolCall({
               {subagentLabel}
             </Text>
             <Text color="gray">(</Text>
-            <Text color="cyan">{desc}</Text>
+            <Text color="white">{desc}</Text>
             <Text color="gray">)</Text>
           </Box>
 
