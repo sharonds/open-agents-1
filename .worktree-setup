@@ -2,3 +2,4 @@
 
 bun install
 cp "$GWT_MAIN_PATH/apps/cli/.env" apps/cli/.env
+cp "$GWT_MAIN_PATH/apps/web/.env" apps/web/.env
