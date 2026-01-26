@@ -16,19 +16,45 @@ export function PlanApprovalPanel({
   planFilePath,
   onClearAndImplement,
 }: PlanApprovalPanelProps) {
-  const { chat, setPermissionMode } = useChatContext();
+  const { chat, setPermissionMode, sandbox } = useChatContext();
   const { addToolApprovalResponse } = useChat({ chat });
 
   const [selected, setSelected] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [plan, setPlan] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Read plan file content
   useEffect(() => {
-    readFile(planFilePath, "utf-8")
-      .then((content) => setPlan(content))
-      .catch(() => setPlan(null));
-  }, [planFilePath]);
+    let cancelled = false;
+    setIsLoading(true);
+    setPlan(null); // Reset to avoid showing stale content from previous plan
+
+    const loadPlan = async () => {
+      try {
+        const content = sandbox
+          ? await sandbox.readFile(planFilePath, "utf-8")
+          : await readFile(planFilePath, "utf-8");
+        if (!cancelled) {
+          setPlan(content);
+        }
+      } catch {
+        if (!cancelled) {
+          setPlan(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadPlan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [planFilePath, sandbox]);
 
   // Reset state when approval request changes
   useEffect(() => {
@@ -146,7 +172,13 @@ export function PlanApprovalPanel({
         </Box>
       )}
 
-      {!renderedPlan && (
+      {!renderedPlan && isLoading && (
+        <Box marginTop={1} marginLeft={2}>
+          <Text color="gray">Loading plan...</Text>
+        </Box>
+      )}
+
+      {!renderedPlan && !isLoading && (
         <Box marginTop={1} marginLeft={2}>
           <Text color="gray">(No plan content)</Text>
         </Box>

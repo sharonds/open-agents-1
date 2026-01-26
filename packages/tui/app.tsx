@@ -627,8 +627,7 @@ function AppContent({ options }: AppProps) {
     }, [messages]);
 
   // Detect pending exit_plan_mode approval for custom plan approval panel
-  const { hasPendingPlanApproval, planApprovalId, planFilePath } =
-    useMemo(() => {
+  const { hasPendingPlanApproval, planApprovalId, planFilePath } = useMemo(() => {
       // First, check if there's a pending exit_plan_mode in the last message
       const lastMessage = messages[messages.length - 1];
       let pendingApproval: { id: string } | undefined;
@@ -680,9 +679,9 @@ function AppContent({ options }: AppProps) {
       return {
         hasPendingPlanApproval: true,
         planApprovalId: pendingApproval.id ?? null,
-        planFilePath: extractedPlanFilePath,
+        planFilePath: extractedPlanFilePath ?? state.planFilePath ?? null,
       };
-    }, [messages]);
+    }, [messages, state.planFilePath]);
 
   // Detect pending askUserQuestion tool calls
   const { hasPendingQuestion, pendingQuestionPart, questionToolCallId } =

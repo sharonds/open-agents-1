@@ -49,6 +49,7 @@ type ChatState = {
 type ChatContextValue = {
   chat: Chat<TUIAgentUIMessage>;
   state: ChatState;
+  sandbox?: Sandbox;
   setPermissionMode: (mode: PermissionMode, planFilePath?: string) => void;
   cyclePermissionMode: () => void;
   addApprovalRule: (rule: ApprovalRule) => void;
@@ -394,6 +395,7 @@ export function ChatProvider({
       value={{
         chat,
         state,
+        sandbox,
         setPermissionMode,
         cyclePermissionMode,
         addApprovalRule,
