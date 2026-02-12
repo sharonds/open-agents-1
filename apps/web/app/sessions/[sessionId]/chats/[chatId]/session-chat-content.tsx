@@ -1105,8 +1105,6 @@ export function SessionChatContent() {
   // Track tool completions to trigger diff refresh
   const prevToolStatesRef = useRef<Map<string, string>>(new Map());
   const hasInitializedToolStatesRef = useRef(false);
-  // Track if we've auto-opened the diff panel (don't re-open if user closed it)
-  const hasAutoOpenedDiffRef = useRef(false);
 
   // Extract current tool states from messages
   const currentToolStates = useMemo(() => {
@@ -1154,31 +1152,13 @@ export function SessionChatContent() {
     prevToolStatesRef.current = currentToolStates;
 
     if (hasFileChange) {
-      // Auto-open diff panel on first file change (not for in-memory sandboxes)
-      if (
-        !showDiffPanel &&
-        !hasAutoOpenedDiffRef.current &&
-        sandboxInfo &&
-        supportsDiff
-      ) {
-        hasAutoOpenedDiffRef.current = true;
-        setShowDiffPanel(true);
-      }
       // Refresh diff and files when files change.
       // Fire-and-forget with error handling - SWR updates error state internally,
       // but we catch here to prevent unhandled rejection warnings.
       refreshDiff().catch(() => {});
       refreshFiles().catch(() => {});
     }
-  }, [
-    currentToolStates,
-    messages,
-    showDiffPanel,
-    sandboxInfo,
-    supportsDiff,
-    refreshDiff,
-    refreshFiles,
-  ]);
+  }, [currentToolStates, messages, refreshDiff, refreshFiles]);
 
   // Note: SWR handles automatic fetching when sandbox becomes available
   // and caching/deduplication of requests
@@ -2190,10 +2170,8 @@ export function SessionChatContent() {
         />
       )}
 
-      {/* Diff Viewer Panel */}
-      {showDiffPanel && (sandboxInfo || Boolean(session.cachedDiff)) && (
-        <DiffViewer onClose={() => setShowDiffPanel(false)} />
-      )}
+      {/* Diff Viewer Modal */}
+      <DiffViewer open={showDiffPanel} onOpenChange={setShowDiffPanel} />
     </div>
   );
 }

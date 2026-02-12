@@ -22,6 +22,11 @@ export const defaultDiffOptions = {
   unsafeCSS,
 } satisfies BaseDiffOptions;
 
+export const splitDiffOptions = {
+  ...defaultDiffOptions,
+  diffStyle: "split",
+} satisfies BaseDiffOptions;
+
 export const defaultFileOptions = {
   theme: "github-dark",
   overflow: "scroll",

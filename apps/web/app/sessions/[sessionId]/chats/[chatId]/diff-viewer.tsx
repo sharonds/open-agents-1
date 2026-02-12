@@ -1,17 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, X, FileText, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Loader2 } from "lucide-react";
 import { PatchDiff } from "@pierre/diffs/react";
 import { cn } from "@/lib/utils";
-import { defaultDiffOptions } from "@/lib/diffs-config";
+import { defaultDiffOptions, splitDiffOptions } from "@/lib/diffs-config";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { DiffFile } from "@/app/api/sessions/[sessionId]/diff/route";
 import { useSessionChatContext } from "./session-chat-context";
 
 type DiffViewerProps = {
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
+
+type DiffStyle = "unified" | "split";
 
 function formatTimestamp(date: Date) {
   return date.toLocaleString("en-US", {
@@ -70,13 +80,16 @@ function FileEntry({
   file,
   isExpanded,
   onToggle,
+  diffStyle,
 }: {
   file: DiffFile;
   isExpanded: boolean;
   onToggle: () => void;
+  diffStyle: DiffStyle;
 }) {
   const fileName = file.path.split("/").pop() ?? file.path;
   const dirPath = file.path.slice(0, -fileName.length);
+  const options = diffStyle === "split" ? splitDiffOptions : defaultDiffOptions;
 
   return (
     <div className="border-b border-border last:border-b-0">
@@ -112,17 +125,18 @@ function FileEntry({
 
       {isExpanded && file.diff && (
         <div className="border-t border-border">
-          <PatchDiff patch={file.diff} options={defaultDiffOptions} />
+          <PatchDiff key={diffStyle} patch={file.diff} options={options} />
         </div>
       )}
     </div>
   );
 }
 
-export function DiffViewer({ onClose }: DiffViewerProps) {
+export function DiffViewer({ open, onOpenChange }: DiffViewerProps) {
   const { diff, diffLoading, diffError, diffCachedAt, sandboxInfo } =
     useSessionChatContext();
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
+  const [diffStyle, setDiffStyle] = useState<DiffStyle>("unified");
 
   // Show stale indicator if sandbox is offline (even if data came from a live fetch earlier)
   const showStaleIndicator = !sandboxInfo && diff !== null;
@@ -150,103 +164,136 @@ export function DiffViewer({ onClose }: DiffViewerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-card md:relative md:inset-auto md:z-auto md:h-full md:w-[500px] md:min-w-0 md:border-l md:border-border">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-3">
-          <h2 className="font-medium text-foreground">Changes</h2>
-          {diff && diff.summary.totalFiles > 0 && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-green-500">
-                +{diff.summary.totalAdditions}
-              </span>
-              <span className="text-red-400">
-                -{diff.summary.totalDeletions}
-              </span>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton
+        className="flex h-[90vh] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[calc(100vw-4rem)]"
+      >
+        <DialogHeader className="shrink-0 border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between pr-8">
+            <div className="flex items-center gap-3">
+              <DialogTitle className="text-base font-medium">
+                Changes
+              </DialogTitle>
+              {diff && diff.summary.totalFiles > 0 && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-green-500">
+                    +{diff.summary.totalAdditions}
+                  </span>
+                  <span className="text-red-400">
+                    -{diff.summary.totalDeletions}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {/* Unified / Split toggle */}
+              <div className="flex items-center rounded-md border border-border">
+                <button
+                  type="button"
+                  onClick={() => setDiffStyle("unified")}
+                  className={cn(
+                    "rounded-l-md px-2.5 py-1 text-xs font-medium transition-colors",
+                    diffStyle === "unified"
+                      ? "bg-secondary text-secondary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Unified
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDiffStyle("split")}
+                  className={cn(
+                    "rounded-r-md px-2.5 py-1 text-xs font-medium transition-colors",
+                    diffStyle === "split"
+                      ? "bg-secondary text-secondary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Split
+                </button>
+              </div>
+              {diff && diff.files.length > 0 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={expandAll}
+                    className="h-7 px-2 text-xs"
+                  >
+                    Expand all
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={collapseAll}
+                    className="h-7 px-2 text-xs"
+                  >
+                    Collapse
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          <DialogDescription className="sr-only">
+            File changes diff viewer
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Staleness indicator */}
+        {showStaleIndicator && <StaleBanner cachedAt={diffCachedAt} />}
+
+        {/* Content */}
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto",
+            showStaleIndicator && "opacity-90",
+          )}
+        >
+          {diffLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {diffError && (
+            <div className="px-4 py-8 text-center">
+              <p className="text-sm text-red-400">{diffError}</p>
+            </div>
+          )}
+
+          {!diffLoading && !diffError && diff && diff.files.length === 0 && (
+            <div className="px-4 py-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                No changes detected
+              </p>
+            </div>
+          )}
+
+          {!diffLoading && !diffError && diff && diff.files.length > 0 && (
+            <div>
+              {diff.files.map((file) => (
+                <FileEntry
+                  key={file.path}
+                  file={file}
+                  isExpanded={expandedFiles.has(file.path)}
+                  onToggle={() => toggleFile(file.path)}
+                  diffStyle={diffStyle}
+                />
+              ))}
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          {diff && diff.files.length > 0 && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={expandAll}
-                className="h-7 px-2 text-xs"
-              >
-                Expand all
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={collapseAll}
-                className="h-7 px-2 text-xs"
-              >
-                Collapse
-              </Button>
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-7 w-7"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
-      {/* Staleness indicator */}
-      {showStaleIndicator && <StaleBanner cachedAt={diffCachedAt} />}
-
-      {/* Content */}
-      <div
-        className={cn(
-          "flex-1 overflow-y-auto",
-          showStaleIndicator && "opacity-90",
-        )}
-      >
-        {diffLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        {/* Footer with file count */}
+        {diff && diff.files.length > 0 && (
+          <div className="shrink-0 border-t border-border px-4 py-2 text-xs text-muted-foreground">
+            {diff.summary.totalFiles} file
+            {diff.summary.totalFiles !== 1 && "s"} changed
           </div>
         )}
-
-        {diffError && (
-          <div className="px-4 py-8 text-center">
-            <p className="text-sm text-red-400">{diffError}</p>
-          </div>
-        )}
-
-        {!diffLoading && !diffError && diff && diff.files.length === 0 && (
-          <div className="px-4 py-8 text-center">
-            <p className="text-sm text-muted-foreground">No changes detected</p>
-          </div>
-        )}
-
-        {!diffLoading && !diffError && diff && diff.files.length > 0 && (
-          <div>
-            {diff.files.map((file) => (
-              <FileEntry
-                key={file.path}
-                file={file}
-                isExpanded={expandedFiles.has(file.path)}
-                onToggle={() => toggleFile(file.path)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Footer with file count */}
-      {diff && diff.files.length > 0 && (
-        <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-          {diff.summary.totalFiles} file{diff.summary.totalFiles !== 1 && "s"}{" "}
-          changed
-        </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
