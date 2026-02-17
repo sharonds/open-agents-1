@@ -1,5 +1,12 @@
 import type { LanguageModel } from "ai";
 
+function normalizeProvider(provider: string): string {
+  const normalized = provider.trim().toLowerCase();
+  if (!normalized) return "default";
+  const dot = normalized.indexOf(".");
+  return dot > 0 ? normalized.slice(0, dot) : normalized;
+}
+
 /**
  * Extract the underlying provider name from a LanguageModel.
  *
@@ -10,15 +17,19 @@ import type { LanguageModel } from "ai";
 export function getProvider(model: LanguageModel): string {
   if (typeof model === "string") {
     const slash = model.indexOf("/");
-    return slash > 0 ? model.slice(0, slash) : "default";
+    return slash > 0
+      ? normalizeProvider(model.slice(0, slash))
+      : normalizeProvider(model);
   }
 
   if (model.provider === "gateway") {
     const slash = model.modelId.indexOf("/");
-    return slash > 0 ? model.modelId.slice(0, slash) : "default";
+    return slash > 0
+      ? normalizeProvider(model.modelId.slice(0, slash))
+      : "default";
   }
 
-  return model.provider;
+  return normalizeProvider(model.provider);
 }
 
 /** Tool names shared across all providers. */

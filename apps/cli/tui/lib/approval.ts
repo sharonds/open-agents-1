@@ -13,6 +13,12 @@ export type ToolApprovalInfo = {
   dontAskAgainPattern?: string;
 };
 
+function isBashToolPart(
+  part: TUIAgentUIToolPart,
+): part is Extract<TUIAgentUIToolPart, { type: "tool-bash" | "tool-bash_anthropic" }> {
+  return part.type === "tool-bash" || part.type === "tool-bash_anthropic";
+}
+
 /**
  * Extract command prefix for approval rules.
  * Uses 3 tokens if second token is "run" (e.g., "bun run dev"), otherwise 2.
@@ -74,7 +80,8 @@ export function getToolApprovalInfo(
       };
     }
 
-    case "tool-bash": {
+    case "tool-bash":
+    case "tool-bash_anthropic": {
       const command = String(part.input?.command ?? "");
       return {
         toolType: "Bash command",
@@ -192,7 +199,8 @@ export function inferApprovalRule(
       };
     }
 
-    case "tool-bash": {
+    case "tool-bash":
+    case "tool-bash_anthropic": {
       const command = String(part.input?.command ?? "").trim();
       if (!command) return null;
 
@@ -317,7 +325,7 @@ export function toolMatchesApprovalRule(
 
   switch (rule.type) {
     case "command-prefix": {
-      if (part.type !== "tool-bash") return false;
+      if (!isBashToolPart(part)) return false;
       const command = String(part.input?.command ?? "").trim();
       return command.startsWith(rule.prefix);
     }
