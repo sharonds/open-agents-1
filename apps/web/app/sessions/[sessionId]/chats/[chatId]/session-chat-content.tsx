@@ -1156,6 +1156,7 @@ export function SessionChatContent() {
 
   // Track whether we've auto-attempted sandbox startup for this page load.
   const hasAutoStartedSandboxRef = useRef(false);
+  const backgroundProvisioningRetriesRef = useRef(0);
   const hasAutoRestoredSnapshotRef = useRef(false);
   const shouldAutoResumeOnEntryRef = useRef(true);
 
@@ -1315,10 +1316,16 @@ export function SessionChatContent() {
     // Background provisioning in flight: the server already claimed sandbox
     // creation (lifecycleState moved to "active") but the sandbox state isn't
     // in the DB yet. Retry the reconnect probe after a short delay.
+    // Cap retries to avoid polling forever if background provisioning fails
+    // and the lifecycle state reset also fails.
+    const MAX_BACKGROUND_PROVISIONING_RETRIES = 20; // ~30s at 1.5s intervals
     if (
       reconnectionStatus === "no_sandbox" &&
-      lifecycleTiming.state === "active"
+      lifecycleTiming.state === "active" &&
+      backgroundProvisioningRetriesRef.current <
+        MAX_BACKGROUND_PROVISIONING_RETRIES
     ) {
+      backgroundProvisioningRetriesRef.current += 1;
       const timer = setTimeout(() => {
         void attemptReconnection();
       }, 1_500);

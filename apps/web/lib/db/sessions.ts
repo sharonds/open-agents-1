@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "./client";
 import {
   chatMessages,
@@ -86,13 +86,12 @@ export async function updateSession(
 
 /**
  * Atomically claims sandbox provisioning by incrementing lifecycleVersion
- * only when it matches the expected value and lifecycle is claimable.
- * Returns true if this caller won the race; false if another caller already
- * claimed or moved lifecycle state.
+ * only when it matches the expected value. Returns true if this caller won
+ * the race; false if another caller already incremented past the expected
+ * version.
  *
  * This prevents duplicate sandbox creation when the background after()
- * and the client POST /api/sandbox race by allowing claims only from
- * claimable lifecycle states.
+ * and the client POST /api/sandbox race.
  */
 export async function claimSandboxProvisioning(
   sessionId: string,
@@ -102,17 +101,12 @@ export async function claimSandboxProvisioning(
     .update(sessions)
     .set({
       lifecycleVersion: expectedVersion + 1,
-      lifecycleState: "active",
       updatedAt: new Date(),
     })
     .where(
       and(
         eq(sessions.id, sessionId),
         eq(sessions.lifecycleVersion, expectedVersion),
-        or(
-          eq(sessions.lifecycleState, "provisioning"),
-          eq(sessions.lifecycleState, "failed"),
-        ),
       ),
     )
     .returning({ id: sessions.id });

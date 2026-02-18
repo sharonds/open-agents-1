@@ -3,7 +3,6 @@ import { after } from "next/server";
 import {
   createSessionWithInitialChat,
   getSessionsByUserId,
-  updateSession,
 } from "@/lib/db/sessions";
 import { getUserPreferences } from "@/lib/db/user-preferences";
 import { parseGitHubUrl } from "@/lib/github/client";
@@ -156,25 +155,11 @@ export async function POST(req: Request) {
           `[Session] Background sandbox provisioning completed for session ${sessionId}`,
         );
       } catch (error) {
-        // Non-fatal: the client auto-create effect will retry.
-        // Reset lifecycleState from "active" (set by claimSandboxProvisioning)
-        // back to "provisioning" so the client's retry loop can detect the
-        // failure and fall through to ensureSandboxReady() instead of polling
-        // indefinitely.
+        // Non-fatal: the client auto-create effect will retry
         console.error(
           `[Session] Background sandbox provisioning failed for session ${sessionId}:`,
           error,
         );
-        try {
-          await updateSession(sessionId, {
-            lifecycleState: "provisioning",
-          });
-        } catch (updateError) {
-          console.error(
-            `[Session] Failed to reset lifecycle state for session ${sessionId}:`,
-            updateError,
-          );
-        }
       }
     });
 

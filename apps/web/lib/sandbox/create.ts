@@ -35,6 +35,20 @@ function toFileEntries(
   return entries;
 }
 
+/**
+ * Build the environment variables dict for a sandbox.
+ * Centralised so both new-sandbox and reconnect paths stay in sync.
+ */
+export function buildSandboxEnv(
+  githubToken: string | null,
+): Record<string, string> {
+  const env: Record<string, string> = {};
+  if (githubToken) {
+    env.GITHUB_TOKEN = githubToken;
+  }
+  return env;
+}
+
 export interface CreateSandboxInput {
   repoUrl?: string;
   branch?: string;
@@ -78,9 +92,9 @@ export async function createSandboxForSession(
 
   // Atomically claim provisioning to prevent double sandbox creation.
   // Both the background after() from session creation and the client's
-  // POST /api/sandbox call createSandboxForSession -- this claim gates on
-  // both lifecycleVersion and claimable lifecycleState, so late callers
-  // cannot re-claim after the winner flips lifecycleState to "active".
+  // POST /api/sandbox call createSandboxForSession -- this CAS on
+  // lifecycleVersion ensures only one caller proceeds past this point.
+  // New sessions start with lifecycleVersion=0; the winner sets it to 1.
   const existingSession = await getSessionById(sessionId);
   const currentVersion = existingSession?.lifecycleVersion ?? 0;
   const claimed = await claimSandboxProvisioning(sessionId, currentVersion);
@@ -118,39 +132,15 @@ export async function createSandboxForSession(
       };
     }
     // Still no runtime state after waiting. The other caller may have
-    // failed. Try to re-claim before proceeding so we get the correct
-    // lifecycleVersion for the subsequent updateSession call.
-    const retrySession = await getSessionById(sessionId);
-    const retryVersion = retrySession?.lifecycleVersion ?? 0;
-    const reClaimed = await claimSandboxProvisioning(sessionId, retryVersion);
-    if (!reClaimed) {
-      // Another caller is still active -- one more check for a finished sandbox.
-      const finalCheck = await getSessionById(sessionId);
-      if (finalCheck && hasRuntimeSandboxState(finalCheck.sandboxState)) {
-        console.log(
-          `[Sandbox] Skipping creation for session ${sessionId} -- sandbox provisioned after re-claim attempt`,
-        );
-        return {
-          createdAt: Date.now(),
-          timeout:
-            sandboxType === "just-bash" ? null : DEFAULT_SANDBOX_TIMEOUT_MS,
-          currentBranch: repoUrl ? branch : undefined,
-          mode: sandboxType,
-          timing: { readyMs: 0 },
-        };
-      }
-      throw new Error(
-        `[Sandbox] Unable to claim sandbox provisioning for session ${sessionId}`,
-      );
-    }
+    // failed. Fall through and create the sandbox ourselves.
+    console.warn(
+      `[Sandbox] Claim failed but no sandbox found for session ${sessionId} after waiting -- proceeding with creation`,
+    );
   }
 
   const startTime = Date.now();
 
-  const env: Record<string, string> = {};
-  if (githubToken) {
-    env.GITHUB_TOKEN = githubToken;
-  }
+  const env = buildSandboxEnv(githubToken);
 
   // Download and extract tarball if repo provided (needed for hybrid and just-bash)
   let files: Record<string, FileEntry> = {};

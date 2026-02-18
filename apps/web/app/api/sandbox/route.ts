@@ -4,7 +4,7 @@ import { parseGitHubUrl } from "@/lib/github/client";
 import { getRepoToken } from "@/lib/github/get-repo-token";
 import { getUserGitHubToken } from "@/lib/github/user-token";
 import { DEFAULT_SANDBOX_TIMEOUT_MS } from "@/lib/sandbox/config";
-import { createSandboxForSession } from "@/lib/sandbox/create";
+import { buildSandboxEnv, createSandboxForSession } from "@/lib/sandbox/create";
 import {
   buildActiveLifecycleUpdate,
   getNextLifecycleVersion,
@@ -87,10 +87,7 @@ export async function POST(req: Request) {
       session.user.email ?? `${session.user.username}@users.noreply.vercel.app`,
   };
 
-  const env: Record<string, string> = {};
-  if (githubToken) {
-    env.GITHUB_TOKEN = githubToken;
-  }
+  const env = buildSandboxEnv(githubToken);
 
   // ============================================
   // RECONNECT: Existing sandbox
