@@ -8,6 +8,8 @@ export interface Source {
   branch?: string;
   /** Token for authenticated git access (e.g., GitHub PAT). Enables push operations. */
   token?: string;
+  /** If set, create and checkout a new branch with this name after cloning */
+  newBranch?: string;
 }
 
 /**

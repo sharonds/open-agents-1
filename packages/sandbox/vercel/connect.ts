@@ -77,6 +77,7 @@ export async function connectVercel(
         url: state.source.repo,
         branch: state.source.branch,
         token: state.source.token,
+        newBranch: state.source.newBranch,
       },
       env: options?.env,
       gitUser: options?.gitUser,
