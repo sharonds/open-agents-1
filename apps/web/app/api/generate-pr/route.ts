@@ -14,7 +14,7 @@ import { isSandboxActive } from "@/lib/sandbox/utils";
 import { getServerSession } from "@/lib/session/get-server-session";
 
 const prContentSchema = z.object({
-  title: z.string().describe("A concise PR title, max 72 characters"),
+  title: z.string().describe("A concise PR title, max 72 characters. Should follow conventional commits format."),
   body: z
     .string()
     .describe(
@@ -1041,7 +1041,7 @@ Respond with ONLY the commit message, nothing else.`,
   let prContent: z.infer<typeof prContentSchema>;
   try {
     const { output } = await generateText({
-      model: gateway("google/gemini-3-flash"),
+      model: gateway("anthropic/claude-haiku-4.5"),
       output: Output.object({
         schema: prContentSchema,
       }),
