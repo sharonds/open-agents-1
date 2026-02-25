@@ -1,5 +1,4 @@
 import {
-  type FinishReason,
   type LanguageModelUsage,
   type ModelMessage,
   type UIMessage,
@@ -33,25 +32,19 @@ export async function runDurableChatWorkflow(
 
   await closeStream(writable);
 
-  return {
-    responseMessage: result.responseMessage,
-    totalMessageUsage: result.totalMessageUsage,
-  };
+  return result;
 }
 
 async function runChatStep(
   messages: ModelMessage[],
   writable: WritableStream<UIMessageChunk>,
   callOptions: DurableAgentCallOptions,
-) {
+): Promise<ChatWorkflowResult> {
   "use step";
 
   const { webAgent } = await import("@/app/config");
 
   let responseMessage: UIMessage | null = null;
-  let streamFinishReason: FinishReason | undefined;
-  let lastStepUsage: LanguageModelUsage | undefined;
-  let totalMessageUsage: LanguageModelUsage | undefined;
 
   const result = await webAgent.stream({
     messages,
@@ -62,22 +55,8 @@ async function runChatStep(
   });
 
   const stream = result.toUIMessageStream<UIMessage>({
-    onFinish: ({ responseMessage: finishedMessage, finishReason }) => {
-      responseMessage = finishedMessage;
-      streamFinishReason = finishReason;
-    },
-    messageMetadata: ({ part }) => {
-      if (part.type === "finish-step") {
-        lastStepUsage = part.usage;
-        return { lastStepUsage, totalMessageUsage: undefined };
-      }
-
-      if (part.type === "finish") {
-        totalMessageUsage = part.totalUsage;
-        return { lastStepUsage, totalMessageUsage: part.totalUsage };
-      }
-
-      return undefined;
+    onFinish: ({ responseMessage: finishedMessage }) => {
+      responseMessage = toSerializable(finishedMessage);
     },
   });
 
@@ -91,21 +70,27 @@ async function runChatStep(
         break;
       }
 
-      await writer.write(value);
+      await writer.write(toSerializable(value));
     }
   } finally {
     reader.releaseLock();
     writer.releaseLock();
   }
 
-  if (!streamFinishReason) {
-    await result.finishReason;
-  }
+  const totalMessageUsage = toSerializable(await result.usage);
 
   return {
     responseMessage,
     totalMessageUsage,
   };
+}
+
+function toSerializable<T>(value: T): T {
+  return JSON.parse(
+    JSON.stringify(value, (_key, nestedValue) =>
+      typeof nestedValue === "bigint" ? nestedValue.toString() : nestedValue,
+    ),
+  ) as T;
 }
 
 async function closeStream(writable: WritableStream<UIMessageChunk>) {
