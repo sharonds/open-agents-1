@@ -114,6 +114,9 @@ const STREAMDOWN_FADE_IN_ANIMATION = {
   duration: 250,
   easing: "ease-out",
 } as const;
+const TOOL_CALL_FADE_DURATION = 0.2;
+const TOOL_CALL_STAGGER_DELAY = 0.06;
+const TOOL_CALL_MAX_STAGGER_STEPS = 4;
 
 const emptySubscribe = () => () => {};
 
@@ -189,6 +192,13 @@ function getPartIdentity(part: WebAgentUIMessagePart): string {
   }
 
   return `part:${part.type}`;
+}
+
+function getToolCallAnimationDelay(sequenceIndex: number): number {
+  return (
+    Math.min(sequenceIndex, TOOL_CALL_MAX_STAGGER_STEPS) *
+    TOOL_CALL_STAGGER_DELAY
+  );
 }
 
 type CreateSandboxResponse = SandboxInfo & {
@@ -2194,12 +2204,40 @@ export function SessionChatContent() {
             <div className="space-y-6">
               {groupedRenderMessages.map(
                 ({ message: m, groups, isStreaming: isMessageStreaming }) => {
+                  let toolSequenceIndex = 0;
+
                   return groups.map((group) => {
+                    const isToolGroup =
+                      group.type === "task-group" ||
+                      (group.type === "part" && isToolUIPart(group.part));
+                    const toolDelay = isToolGroup
+                      ? getToolCallAnimationDelay(toolSequenceIndex)
+                      : 0;
+
+                    if (isToolGroup) {
+                      toolSequenceIndex += 1;
+                    }
+
                     if (group.type === "task-group") {
                       return (
-                        <div
+                        <motion.div
                           key={`${m.id}-${group.renderKey}`}
                           className="max-w-full"
+                          initial={
+                            shouldReduceMotion || !isMessageStreaming
+                              ? undefined
+                              : { opacity: 0, y: 6 }
+                          }
+                          animate={
+                            shouldReduceMotion || !isMessageStreaming
+                              ? undefined
+                              : { opacity: 1, y: 0 }
+                          }
+                          transition={{
+                            duration: TOOL_CALL_FADE_DURATION,
+                            ease: "easeOut",
+                            delay: toolDelay,
+                          }}
                         >
                           <TaskGroupView
                             taskParts={group.tasks}
@@ -2220,7 +2258,7 @@ export function SessionChatContent() {
                               })
                             }
                           />
-                        </div>
+                        </motion.div>
                       );
                     }
 
@@ -2281,9 +2319,24 @@ export function SessionChatContent() {
 
                     if (isToolUIPart(p)) {
                       return (
-                        <div
+                        <motion.div
                           key={`${m.id}-${group.renderKey}`}
                           className="max-w-full"
+                          initial={
+                            shouldReduceMotion || !isMessageStreaming
+                              ? undefined
+                              : { opacity: 0, y: 6 }
+                          }
+                          animate={
+                            shouldReduceMotion || !isMessageStreaming
+                              ? undefined
+                              : { opacity: 1, y: 0 }
+                          }
+                          transition={{
+                            duration: TOOL_CALL_FADE_DURATION,
+                            ease: "easeOut",
+                            delay: toolDelay,
+                          }}
                         >
                           <ToolCall
                             part={p as WebAgentUIToolPart}
@@ -2299,7 +2352,7 @@ export function SessionChatContent() {
                               })
                             }
                           />
-                        </div>
+                        </motion.div>
                       );
                     }
 
