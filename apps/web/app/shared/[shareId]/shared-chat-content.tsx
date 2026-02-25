@@ -2,8 +2,9 @@
 
 import type { TaskToolUIPart } from "@open-harness/agent";
 import { isReasoningUIPart, isToolUIPart } from "ai";
-import { ExternalLink } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import { Streamdown } from "streamdown";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   WebAgentUIMessage,
   WebAgentUIMessagePart,
@@ -12,6 +13,7 @@ import type {
 import { TaskGroupView } from "@/components/task-group-view";
 import { ThinkingBlock } from "@/components/thinking-block";
 import { ToolCall } from "@/components/tool-call";
+import { Button } from "@/components/ui/button";
 import type { Chat } from "@/lib/db/schema";
 import { streamdownPlugins } from "@/lib/streamdown-config";
 import { cn } from "@/lib/utils";
@@ -37,6 +39,45 @@ export function SharedChatContent({
   session: SharedSession;
   chats: ChatWithMessages[];
 }) {
+  const [copiedAssistantMessageKey, setCopiedAssistantMessageKey] = useState<
+    string | null
+  >(null);
+  const assistantCopyResetTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (assistantCopyResetTimeoutRef.current) {
+        clearTimeout(assistantCopyResetTimeoutRef.current);
+        assistantCopyResetTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const copyAssistantMessageText = useCallback(
+    async (copyKey: string, text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedAssistantMessageKey(copyKey);
+
+        if (assistantCopyResetTimeoutRef.current) {
+          clearTimeout(assistantCopyResetTimeoutRef.current);
+        }
+
+        assistantCopyResetTimeoutRef.current = setTimeout(() => {
+          setCopiedAssistantMessageKey((currentKey) =>
+            currentKey === copyKey ? null : currentKey,
+          );
+          assistantCopyResetTimeoutRef.current = null;
+        }, 2_000);
+      } catch {
+        // Ignore copy failures (e.g. clipboard permissions denied)
+      }
+    },
+    [],
+  );
+
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background text-foreground">
       {/* Header */}
@@ -189,13 +230,43 @@ export function SharedChatContent({
                               </div>
                             ) : (
                               <div className="min-w-0 w-full overflow-hidden">
-                                <Streamdown
-                                  mode="static"
-                                  isAnimating={false}
-                                  plugins={streamdownPlugins}
-                                >
-                                  {p.text}
-                                </Streamdown>
+                                <div className="flex flex-col gap-2">
+                                  <Streamdown
+                                    mode="static"
+                                    isAnimating={false}
+                                    plugins={streamdownPlugins}
+                                  >
+                                    {p.text}
+                                  </Streamdown>
+                                  <div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                      onClick={() =>
+                                        void copyAssistantMessageText(
+                                          `${m.id}-${i}`,
+                                          p.text,
+                                        )
+                                      }
+                                      disabled={p.text.trim().length === 0}
+                                      aria-label="Copy assistant message"
+                                    >
+                                      {copiedAssistantMessageKey === `${m.id}-${i}` ? (
+                                        <>
+                                          <Check className="mr-1 h-3.5 w-3.5" />
+                                          Copied
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="mr-1 h-3.5 w-3.5" />
+                                          Copy
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>

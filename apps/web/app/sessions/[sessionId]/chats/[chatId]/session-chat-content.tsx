@@ -950,10 +950,16 @@ export function SessionChatContent() {
     });
   }, [renderMessages, isChatInFlightSettled]);
   const [isUpdatingModel, setIsUpdatingModel] = useState(false);
+  const [copiedAssistantMessageKey, setCopiedAssistantMessageKey] = useState<
+    string | null
+  >(null);
   const lastStatusSyncAtRef = useRef(0);
   const statusSyncInFlightRef = useRef(false);
   const pendingOptimisticTitleChatIdRef = useRef<string | null>(null);
   const hasSetOptimisticTitleRef = useRef(false);
+  const assistantCopyResetTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const markReadRef = useRef<{
     lastAt: number;
     lastChatId: string | null;
@@ -966,6 +972,38 @@ export function SessionChatContent() {
   const inFlightStartedAtRef = useRef<number | null>(null);
   const lastStreamRecoveryAtRef = useRef(0);
   const streamRecoveryProbeInFlightRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (assistantCopyResetTimeoutRef.current) {
+        clearTimeout(assistantCopyResetTimeoutRef.current);
+        assistantCopyResetTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const copyAssistantMessageText = useCallback(
+    async (copyKey: string, text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedAssistantMessageKey(copyKey);
+
+        if (assistantCopyResetTimeoutRef.current) {
+          clearTimeout(assistantCopyResetTimeoutRef.current);
+        }
+
+        assistantCopyResetTimeoutRef.current = setTimeout(() => {
+          setCopiedAssistantMessageKey((currentKey) =>
+            currentKey === copyKey ? null : currentKey,
+          );
+          assistantCopyResetTimeoutRef.current = null;
+        }, 2_000);
+      } catch {
+        // Ignore copy failures (e.g. clipboard permissions denied)
+      }
+    },
+    [],
+  );
 
   const requestStatusSync = useCallback(
     async (mode: "normal" | "force" = "normal"): Promise<void> => {
@@ -2239,20 +2277,51 @@ export function SessionChatContent() {
                             </div>
                           ) : (
                             <div className="min-w-0 w-full overflow-hidden">
-                              <Streamdown
-                                animated={
-                                  isMessageStreaming
-                                    ? STREAMDOWN_FADE_IN_ANIMATION
-                                    : undefined
-                                }
-                                mode={
-                                  isMessageStreaming ? "streaming" : "static"
-                                }
-                                isAnimating={isMessageStreaming}
-                                plugins={streamdownPlugins}
-                              >
-                                {p.text}
-                              </Streamdown>
+                              <div className="flex flex-col gap-2">
+                                <Streamdown
+                                  animated={
+                                    isMessageStreaming
+                                      ? STREAMDOWN_FADE_IN_ANIMATION
+                                      : undefined
+                                  }
+                                  mode={
+                                    isMessageStreaming ? "streaming" : "static"
+                                  }
+                                  isAnimating={isMessageStreaming}
+                                  plugins={streamdownPlugins}
+                                >
+                                  {p.text}
+                                </Streamdown>
+                                <div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                    onClick={() =>
+                                      void copyAssistantMessageText(
+                                        `${m.id}-${group.renderKey}`,
+                                        p.text,
+                                      )
+                                    }
+                                    disabled={p.text.trim().length === 0}
+                                    aria-label="Copy assistant message"
+                                  >
+                                    {copiedAssistantMessageKey ===
+                                    `${m.id}-${group.renderKey}` ? (
+                                      <>
+                                        <Check className="mr-1 h-3.5 w-3.5" />
+                                        Copied
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="mr-1 h-3.5 w-3.5" />
+                                        Copy
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
