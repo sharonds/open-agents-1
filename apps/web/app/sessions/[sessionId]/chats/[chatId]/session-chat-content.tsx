@@ -113,6 +113,7 @@ const STREAMDOWN_FADE_IN_ANIMATION = {
   duration: 250,
   easing: "ease-out",
 } as const;
+const DEFAULT_CONTEXT_LIMIT = 200_000;
 
 const emptySubscribe = () => () => {};
 
@@ -720,6 +721,7 @@ export function SessionChatContent() {
     session,
     chatInfo,
     chat,
+    contextLimit,
     stopChatStream,
     retryChatStream,
     initialMessages,
@@ -2572,11 +2574,10 @@ export function SessionChatContent() {
                       </span>
                     )
                   )}
-                  {/* TODO: Derive context limit from model ID instead of hardcoding */}
                   <ContextUsageIndicator
                     inputTokens={tokenUsage.inputTokens}
                     outputTokens={tokenUsage.outputTokens}
-                    contextLimit={200_000}
+                    contextLimit={contextLimit ?? DEFAULT_CONTEXT_LIMIT}
                   />
                 </div>
 
