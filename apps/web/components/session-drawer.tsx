@@ -24,6 +24,7 @@ interface SessionDrawerProps {
   sessions: SessionWithUnread[];
   loading: boolean;
   onSessionClick: (sessionId: string) => void;
+  desktopSide?: "left" | "right";
 }
 
 function formatTime(date: Date): string {
@@ -263,6 +264,7 @@ export function SessionDrawer({
   sessions,
   loading,
   onSessionClick,
+  desktopSide = "right",
 }: SessionDrawerProps) {
   const isMobile = useIsMobile();
 
@@ -287,7 +289,7 @@ export function SessionDrawer({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        side="right"
+        side={desktopSide}
         className="flex flex-col gap-0 p-0 sm:max-w-sm"
       >
         <SheetHeader className="sr-only">

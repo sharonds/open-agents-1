@@ -222,6 +222,7 @@ export function SessionLayoutShell({
           sessions={sessions}
           loading={sessionsLoading}
           onSessionClick={handleSessionSwitch}
+          desktopSide="left"
         />
       </SidebarProvider>
     </SessionLayoutContext.Provider>
