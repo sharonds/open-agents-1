@@ -22,7 +22,7 @@ const themeInitializationScript = `
   const theme =
     storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
       ? storedTheme
-      : "dark";
+      : "system";
 
   const resolvedTheme =
     theme === "system"

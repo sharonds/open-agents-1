@@ -51,7 +51,7 @@ function applyTheme(resolvedTheme: ResolvedTheme) {
 export function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const signingOut = useRef(false);
-  const [theme, setThemeState] = useState<ThemePreference>("dark");
+  const [theme, setThemeState] = useState<ThemePreference>("system");
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("dark");
 
   const applyThemePreference = useCallback((nextTheme: ThemePreference) => {
@@ -63,7 +63,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    const initialTheme = isThemePreference(storedTheme) ? storedTheme : "dark";
+    const initialTheme = isThemePreference(storedTheme)
+      ? storedTheme
+      : "system";
 
     setThemeState(initialTheme);
     applyThemePreference(initialTheme);
