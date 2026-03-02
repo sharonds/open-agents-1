@@ -36,7 +36,6 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import useSWR from "swr";
 import type {
   WebAgentUIMessage,
   WebAgentUIMessagePart,
@@ -81,7 +80,6 @@ import {
 import { ACCEPT_IMAGE_TYPES, isValidImageType } from "@/lib/image-utils";
 import { DEFAULT_SANDBOX_TIMEOUT_MS } from "@/lib/sandbox/config";
 import { streamdownPlugins } from "@/lib/streamdown-config";
-import { fetcher } from "@/lib/swr";
 import { cn } from "@/lib/utils";
 import {
   type SandboxInfo,
