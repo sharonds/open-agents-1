@@ -1607,7 +1607,7 @@ export function SessionChatContent({ initialModels }: SessionChatContentProps) {
     if (isAtBottom) {
       scrollToBottom();
     }
-  }, [messages, isAtBottom, scrollToBottom]);
+  }, [messages, isAtBottom, scrollToBottom, showThinkingIndicator]);
 
   useEffect(() => {
     if (!isChatInFlight) {
