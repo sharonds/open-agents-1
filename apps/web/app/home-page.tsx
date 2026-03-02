@@ -4,6 +4,7 @@ import { History } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { SignedOutHero } from "@/components/auth/signed-out-hero";
 import { HomeSkeleton } from "@/components/home-skeleton";
 import type { SandboxType } from "@/components/sandbox-selector-compact";
@@ -87,6 +88,7 @@ export function HomePage({ hasSessionCookie, lastRepo }: HomePageProps) {
   ).length;
   const [isCreating, setIsCreating] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [starterResetVersion, setStarterResetVersion] = useState(0);
 
   const handleCreateSession = async (input: {
     repoOwner?: string;
@@ -112,6 +114,9 @@ export function HomePage({ hasSessionCookie, lastRepo }: HomePageProps) {
       });
 
       if (shouldKickoffInBackground && initialPrompt) {
+        toast.success("Added to sessions. Starting in background.");
+        setStarterResetVersion((current) => current + 1);
+
         void startSessionInBackground({
           sessionId: createdSession.id,
           chatId: chat.id,
@@ -122,6 +127,7 @@ export function HomePage({ hasSessionCookie, lastRepo }: HomePageProps) {
           initialPrompt,
         }).catch((error) => {
           console.error("Failed to start background prompt:", error);
+          toast.error("Added, but failed to kick off the first prompt.");
         });
         return;
       }
@@ -129,6 +135,7 @@ export function HomePage({ hasSessionCookie, lastRepo }: HomePageProps) {
       router.push(`/sessions/${createdSession.id}/chats/${chat.id}`);
     } catch (error) {
       console.error("Failed to create session:", error);
+      toast.error("Failed to create session.");
     } finally {
       setIsCreating(false);
     }
@@ -183,6 +190,7 @@ export function HomePage({ hasSessionCookie, lastRepo }: HomePageProps) {
         </h1>
 
         <SessionStarter
+          key={starterResetVersion}
           onSubmit={handleCreateSession}
           isLoading={isCreating}
           lastRepo={lastRepo}
