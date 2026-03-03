@@ -326,7 +326,8 @@ export function useSessionChats(
 
       void mutateSessionSummaries<SessionsResponse>(
         "/api/sessions",
-        (current) => applySessionSummaryFromChats(current, sessionId, nextChats),
+        (current) =>
+          applySessionSummaryFromChats(current, sessionId, nextChats),
         { revalidate: false },
       );
     },
