@@ -561,7 +561,18 @@ export function useSessionChats(
     );
   };
 
-  const setChatStreaming = async (chatId: string, isStreaming: boolean) => {
+  const setChatStreaming = async (
+    chatId: string,
+    isStreaming: boolean,
+    options?: {
+      /**
+       * When clearing streaming from status transitions, keep server state
+       * authoritative (do not optimistically force `isStreaming=false`).
+       */
+      preserveUntilServer?: boolean;
+    },
+  ) => {
+    const preserveUntilServer = options?.preserveUntilServer ?? !isStreaming;
     let shouldMutateCache = isStreaming;
 
     if (isStreaming) {
@@ -587,27 +598,26 @@ export function useSessionChats(
 
         if (next.streaming) {
           delete next.streaming;
-          if (wasActivelyManaged) {
+          if (preserveUntilServer || !wasActivelyManaged) {
+            // Cleanup/status clears should not install suppression markers.
+            // Let server polling drive the final state.
+            delete next.streamingClearedAt;
+          } else {
             // Record when streaming was cleared so the merge logic can suppress
             // stale server responses that still report isStreaming: true (the
             // server's onFinish hasn't cleared activeStreamId yet).
             next.streamingClearedAt = Date.now();
-          } else {
-            // This is a cleanup-only clear (e.g. route re-entry). Do not keep
-            // a suppression marker that could hide a real server-side stream.
-            delete next.streamingClearedAt;
           }
-        } else if (!wasActivelyManaged) {
+        } else if (!wasActivelyManaged || preserveUntilServer) {
           delete next.streamingClearedAt;
         }
 
         return next;
       });
 
-      // Only the component that actively started streaming in this tab should
-      // force the local SWR cache to `isStreaming: false`. Cleanup-only clears
-      // should let polling/server state stay authoritative.
-      shouldMutateCache = wasActivelyManaged;
+      // Only force local cache to false for explicit local clears.
+      // Status-transition clears should keep server state authoritative.
+      shouldMutateCache = wasActivelyManaged && !preserveUntilServer;
     }
 
     if (!shouldMutateCache) {
