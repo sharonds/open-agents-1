@@ -2098,8 +2098,8 @@ export function SessionChatContent(_props: unknown) {
           <div className="flex min-w-0 items-center gap-2 lg:gap-4">
             <SidebarTrigger className="shrink-0" />
             <div className="flex min-w-0 items-center gap-2 text-sm">
-              {session.repoName ? (
-                <>
+              {session.repoName && (
+                <div className="hidden min-w-0 items-center gap-2 sm:flex">
                   {session.cloneUrl ? (
                     /* oxlint-disable-next-line nextjs/no-html-link-for-pages */
                     <a
@@ -2118,20 +2118,18 @@ export function SessionChatContent(_props: unknown) {
                   )}
                   {(session.branch ?? sandboxInfo?.currentBranch) && (
                     <>
-                      <span className="hidden text-muted-foreground/40 sm:inline">
-                        /
-                      </span>
-                      <span className="hidden text-muted-foreground sm:inline">
+                      <span className="text-muted-foreground/40">/</span>
+                      <span className="truncate text-muted-foreground">
                         {session.branch ?? sandboxInfo?.currentBranch}
                       </span>
                     </>
                   )}
-                </>
-              ) : (
-                <span className="truncate text-muted-foreground">
-                  {session.title}
-                </span>
+                  <span className="text-muted-foreground/40">/</span>
+                </div>
               )}
+              <span className="truncate font-medium text-foreground sm:font-normal sm:text-muted-foreground">
+                {session.title}
+              </span>
             </div>
             <SandboxHeaderBadge
               sandboxInfo={sandboxInfo}
