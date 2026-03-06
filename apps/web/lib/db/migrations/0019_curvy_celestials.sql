@@ -1,0 +1,1 @@
+DROP INDEX "team_invitations_team_email_status_idx";

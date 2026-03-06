@@ -1,4 +1,8 @@
-import { addUserToTeam, getTeamById, getTeamMembership } from "@/lib/db/teams";
+import {
+  createTeamInvitation,
+  getTeamById,
+  getTeamMembership,
+} from "@/lib/db/teams";
 import { getUserByEmail } from "@/lib/db/users";
 import { getServerSession } from "@/lib/session/get-server-session";
 
@@ -74,36 +78,42 @@ export async function POST(req: Request, context: RouteContext) {
   }
 
   const targetUser = await getUserByEmail(email);
-  if (!targetUser) {
-    return Response.json(
-      {
-        error:
-          "No user found for that email. Ask them to sign in at least once before inviting.",
-      },
-      { status: 404 },
-    );
-  }
 
-  if (targetUser.id === session.user.id) {
+  if (targetUser?.id === session.user.id) {
     return Response.json(
       { error: "You are already a member of this team" },
       { status: 400 },
     );
   }
 
-  const result = await addUserToTeam({
+  if (targetUser) {
+    const existingMembership = await getTeamMembership(targetUser.id, teamId);
+    if (existingMembership) {
+      return Response.json({
+        alreadyMember: true,
+        invitation: null,
+      });
+    }
+  }
+
+  const invitationResult = await createTeamInvitation({
     teamId,
-    userId: targetUser.id,
+    email,
+    invitedByUserId: session.user.id,
     role: "member",
   });
 
   return Response.json({
-    member: {
-      userId: targetUser.id,
-      username: targetUser.username,
-      email: targetUser.email ?? email,
-      role: result.membership.role,
+    invitation: {
+      id: invitationResult.invitation.id,
+      teamId: invitationResult.invitation.teamId,
+      email: invitationResult.invitation.email,
+      role: invitationResult.invitation.role,
+      status: invitationResult.invitation.status,
+      createdAt: invitationResult.invitation.createdAt,
+      updatedAt: invitationResult.invitation.updatedAt,
     },
-    alreadyMember: !result.created,
+    alreadyInvited: !invitationResult.created,
+    alreadyMember: false,
   });
 }

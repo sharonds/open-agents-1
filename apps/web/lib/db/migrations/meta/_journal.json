@@ -127,6 +127,20 @@
       "when": 1772726476624,
       "tag": "0017_violet_liz_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1772730834853,
+      "tag": "0018_kind_amphibian",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1772731041889,
+      "tag": "0019_curvy_celestials",
+      "breakpoints": true
     }
   ]
 }

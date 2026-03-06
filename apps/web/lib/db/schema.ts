@@ -82,6 +82,37 @@ export const teamMembers = pgTable(
   ],
 );
 
+export const teamInvitations = pgTable(
+  "team_invitations",
+  {
+    id: text("id").primaryKey(),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role", {
+      enum: ["owner", "member"],
+    })
+      .notNull()
+      .default("member"),
+    invitedByUserId: text("invited_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: ["pending", "accepted", "declined", "revoked"],
+    })
+      .notNull()
+      .default("pending"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    respondedAt: timestamp("responded_at"),
+  },
+  (table) => [
+    index("team_invitations_email_status_idx").on(table.email, table.status),
+    index("team_invitations_team_id_status_idx").on(table.teamId, table.status),
+  ],
+);
+
 export const accounts = pgTable(
   "accounts",
   {
@@ -158,16 +189,12 @@ export const sessions = pgTable(
     })
       .notNull()
       .default("running"),
-    // Repository info
     repoOwner: text("repo_owner"),
     repoName: text("repo_name"),
     branch: text("branch"),
     cloneUrl: text("clone_url"),
-    // Whether this session uses a new auto-generated branch
     isNewBranch: boolean("is_new_branch").default(false).notNull(),
-    // Unified sandbox state
     sandboxState: jsonb("sandbox_state").$type<SandboxState>(),
-    // Lifecycle orchestration state for sandbox management
     lifecycleState: text("lifecycle_state", {
       enum: [
         "provisioning",
@@ -276,6 +303,8 @@ export type Team = typeof teams.$inferSelect;
 export type NewTeam = typeof teams.$inferInsert;
 export type TeamMember = typeof teamMembers.$inferSelect;
 export type NewTeamMember = typeof teamMembers.$inferInsert;
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type NewTeamInvitation = typeof teamInvitations.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type Chat = typeof chats.$inferSelect;
@@ -289,7 +318,6 @@ export type NewChatRead = typeof chatReads.$inferInsert;
 export type GitHubInstallation = typeof githubInstallations.$inferSelect;
 export type NewGitHubInstallation = typeof githubInstallations.$inferInsert;
 
-// Linked accounts for external platforms (Slack, Discord, etc.)
 export const linkedAccounts = pgTable(
   "linked_accounts",
   {
@@ -318,7 +346,6 @@ export const linkedAccounts = pgTable(
 export type LinkedAccount = typeof linkedAccounts.$inferSelect;
 export type NewLinkedAccount = typeof linkedAccounts.$inferInsert;
 
-// CLI tokens for device flow authentication
 export const cliTokens = pgTable(
   "cli_tokens",
   {
@@ -351,7 +378,6 @@ export const cliTokens = pgTable(
 export type CliToken = typeof cliTokens.$inferSelect;
 export type NewCliToken = typeof cliTokens.$inferInsert;
 
-// User preferences for settings
 export const userPreferences = pgTable("user_preferences", {
   id: text("id").primaryKey(),
   userId: text("user_id")
@@ -376,7 +402,6 @@ export const userPreferences = pgTable("user_preferences", {
 export type UserPreferences = typeof userPreferences.$inferSelect;
 export type NewUserPreferences = typeof userPreferences.$inferInsert;
 
-// Usage tracking — one row per assistant turn (append-only)
 export const usageEvents = pgTable("usage_events", {
   id: text("id").primaryKey(),
   userId: text("user_id")

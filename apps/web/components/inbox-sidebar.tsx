@@ -81,6 +81,21 @@ type ArchivedSessionsResponse = {
   error?: string;
 };
 
+type PendingTeamInvitation = {
+  id: string;
+  teamId: string;
+  teamName: string;
+  role: "owner" | "member";
+  invitedByUserId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PendingInvitationsResponse = {
+  invitations: PendingTeamInvitation[];
+  error?: string;
+};
+
 const ARCHIVED_SESSIONS_PAGE_SIZE = 50;
 
 function formatRelativeTime(date: Date): string {
@@ -343,6 +358,18 @@ export function InboxSidebar({
     null,
   );
   const [isInvitingMember, setIsInvitingMember] = useState(false);
+  const [pendingInvitations, setPendingInvitations] = useState<
+    PendingTeamInvitation[]
+  >([]);
+  const [pendingInvitationsLoading, setPendingInvitationsLoading] =
+    useState(false);
+  const [pendingInvitationsError, setPendingInvitationsError] = useState<
+    string | null
+  >(null);
+  const [invitesDialogOpen, setInvitesDialogOpen] = useState(false);
+  const [invitationActionInFlightId, setInvitationActionInFlightId] = useState<
+    string | null
+  >(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchArchivedSessionsPage = useCallback(
@@ -395,6 +422,39 @@ export function InboxSidebar({
     },
     [sessionScope],
   );
+
+  const fetchPendingInvitations = useCallback(async () => {
+    if (!session?.user) {
+      setPendingInvitations([]);
+      setPendingInvitationsError(null);
+      setPendingInvitationsLoading(false);
+      return;
+    }
+
+    setPendingInvitationsLoading(true);
+    setPendingInvitationsError(null);
+
+    try {
+      const response = await fetch("/api/teams/invitations");
+      const data = (await response.json()) as PendingInvitationsResponse;
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to load invitations");
+      }
+
+      setPendingInvitations(data.invitations);
+    } catch (error) {
+      setPendingInvitationsError(
+        error instanceof Error ? error.message : "Failed to load invitations",
+      );
+    } finally {
+      setPendingInvitationsLoading(false);
+    }
+  }, [session?.user]);
+
+  useEffect(() => {
+    void fetchPendingInvitations();
+  }, [fetchPendingInvitations]);
 
   useEffect(() => {
     if (renameDialogSession && renameInputRef.current) {
@@ -642,6 +702,68 @@ export function InboxSidebar({
       setIsInvitingMember(false);
     }
   }, [currentTeam, inviteEmail]);
+
+  const handleOpenInvitesDialog = useCallback(() => {
+    setInvitesDialogOpen(true);
+    void fetchPendingInvitations();
+  }, [fetchPendingInvitations]);
+
+  const handleRespondToInvitation = useCallback(
+    async (invitationId: string, action: "accept" | "decline") => {
+      setInvitationActionInFlightId(invitationId);
+      setPendingInvitationsError(null);
+
+      try {
+        const response = await fetch(
+          `/api/teams/invitations/${invitationId}/${action}`,
+          {
+            method: "POST",
+          },
+        );
+        const data = (await response.json()) as { error?: string };
+
+        if (!response.ok) {
+          throw new Error(data.error ?? `Failed to ${action} invitation`);
+        }
+
+        setPendingInvitations((current) =>
+          current.filter((invitation) => invitation.id !== invitationId),
+        );
+
+        if (action === "accept") {
+          await refreshSession();
+          await onTeamSwitch?.();
+
+          setShowArchived(false);
+          setArchivedSessions([]);
+          setHasMoreArchivedSessions(false);
+          setArchivedSessionsError(null);
+
+          if (activeSessionId) {
+            router.push("/sessions");
+            router.refresh();
+          }
+        }
+
+        void fetchPendingInvitations();
+      } catch (error) {
+        setPendingInvitationsError(
+          error instanceof Error
+            ? error.message
+            : "Failed to update invitation",
+        );
+      } finally {
+        setInvitationActionInFlightId(null);
+      }
+    },
+    [
+      activeSessionId,
+      fetchPendingInvitations,
+      onTeamSwitch,
+      refreshSession,
+      router,
+    ],
+  );
 
   const closeRenameDialog = useCallback(() => {
     setRenameDialogSession(null);
@@ -898,6 +1020,17 @@ export function InboxSidebar({
                   })}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
+                    disabled={pendingInvitationsLoading}
+                    onClick={handleOpenInvitesDialog}
+                  >
+                    Review invites
+                    {pendingInvitations.length > 0 ? (
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {pendingInvitations.length}
+                      </span>
+                    ) : null}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     disabled={isCreatingTeam}
                     onClick={handleOpenCreateTeam}
                   >
@@ -913,8 +1046,10 @@ export function InboxSidebar({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              {teamSwitchError ? (
-                <p className="mt-1.5 text-xs text-red-500">{teamSwitchError}</p>
+              {teamSwitchError || pendingInvitationsError ? (
+                <p className="mt-1.5 text-xs text-red-500">
+                  {teamSwitchError ?? pendingInvitationsError}
+                </p>
               ) : null}
             </div>
           ) : null}
@@ -1069,7 +1204,8 @@ export function InboxSidebar({
           <DialogHeader>
             <DialogTitle>Invite member</DialogTitle>
             <DialogDescription>
-              Add a teammate by email to {currentTeam?.name ?? "this team"}.
+              Invite a teammate by email to {currentTeam?.name ?? "this team"}.
+              They can accept after signing in with that email.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -1106,6 +1242,97 @@ export function InboxSidebar({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={invitesDialogOpen}
+        onOpenChange={(open) => {
+          setInvitesDialogOpen(open);
+          if (!open) {
+            setPendingInvitationsError(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Team invitations</DialogTitle>
+            <DialogDescription>
+              Accept or decline invitations sent to your account email.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {pendingInvitationsLoading ? (
+              <p className="text-sm text-muted-foreground">
+                Loading invitations...
+              </p>
+            ) : pendingInvitations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                You have no pending invitations.
+              </p>
+            ) : (
+              pendingInvitations.map((invitation) => {
+                const isProcessing =
+                  invitationActionInFlightId === invitation.id;
+                return (
+                  <div
+                    key={invitation.id}
+                    className="rounded-md border border-border p-3"
+                  >
+                    <p className="text-sm font-medium text-foreground">
+                      {invitation.teamName}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Role: {invitation.role}
+                    </p>
+                    <div className="mt-3 flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isProcessing}
+                        onClick={() => {
+                          void handleRespondToInvitation(
+                            invitation.id,
+                            "decline",
+                          );
+                        }}
+                      >
+                        Decline
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isProcessing}
+                        onClick={() => {
+                          void handleRespondToInvitation(
+                            invitation.id,
+                            "accept",
+                          );
+                        }}
+                      >
+                        {isProcessing ? "Working..." : "Accept"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            {pendingInvitationsError ? (
+              <p className="text-xs text-red-500">{pendingInvitationsError}</p>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setInvitesDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
