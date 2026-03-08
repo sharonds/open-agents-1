@@ -110,6 +110,7 @@ type SessionSidebarFields = Pick<
   | "prNumber"
   | "prStatus"
   | "createdAt"
+  | "vercelProjectName"
 >;
 
 export type SessionWithUnread = SessionSidebarFields & {
@@ -156,6 +157,7 @@ export async function getSessionsWithUnreadByUserId(
       prNumber: sessions.prNumber,
       prStatus: sessions.prStatus,
       createdAt: sessions.createdAt,
+      vercelProjectName: sessions.vercelProjectName,
       lastActivityAt: sql<Date>`COALESCE(MAX(${chats.updatedAt}), ${sessions.createdAt})`,
       hasUnread: sql<boolean>`COALESCE(BOOL_OR(
         CASE

@@ -1,6 +1,6 @@
 "use client";
 
-import { GitBranch, Loader2, Plus, X } from "lucide-react";
+import { Check, GitBranch, Loader2, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
@@ -35,6 +35,19 @@ interface SessionStarterProps {
   onSubmit: (session: CreateSessionInput) => void;
   isLoading?: boolean;
   lastRepo: { owner: string; repo: string } | null;
+}
+
+function VercelTriangleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 76 65"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+    </svg>
+  );
 }
 
 function getVercelProjectLabel(project: VercelProjectCandidate): string {
@@ -249,70 +262,124 @@ export function SessionStarter({
             {selectedOwner &&
               selectedRepo &&
               currentSession?.authProvider === "vercel" && (
-                <div className="rounded-md border border-input bg-background/60 p-3 dark:border-white/10 dark:bg-white/[0.03]">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      Vercel project
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      If selected, Development environment variables from this
-                      project will be written to <code>.env.local</code> when
-                      the sandbox is first created.
-                    </p>
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    {isProjectLookupPending ? (
-                      <div className="flex h-9 items-center gap-2 rounded-md border border-dashed border-input px-3 text-sm text-muted-foreground dark:border-white/10">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Finding matching Vercel projects...
-                      </div>
-                    ) : repoProjects.length > 0 ? (
-                      <Select
-                        value={selectedVercelProjectId}
-                        onValueChange={setSelectedVercelProjectId}
-                      >
-                        <SelectTrigger className="w-full bg-background/80 dark:bg-white/[0.03]">
-                          <SelectValue placeholder="Choose a Vercel project" />
-                        </SelectTrigger>
-                        <SelectContent align="start" position="popper">
-                          <SelectItem value={NO_VERCEL_PROJECT_VALUE}>
-                            Don&apos;t sync `.env.local`
-                          </SelectItem>
-                          {repoProjects.map((project) => (
-                            <SelectItem
-                              key={project.projectId}
-                              value={project.projectId}
-                            >
-                              {getVercelProjectLabel(project)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="rounded-md border border-dashed border-input px-3 py-2 text-sm text-muted-foreground dark:border-white/10">
-                        No matching Vercel project was found for this
-                        repository. You can still start the session without
-                        syncing
-                        <code>.env.local</code>.
-                      </div>
+                <div
+                  className={cn(
+                    "relative overflow-hidden rounded-lg border p-3 transition-all duration-300",
+                    selectedVercelProject
+                      ? "border-foreground/15 bg-foreground/[0.03] dark:border-white/15 dark:bg-white/[0.04]"
+                      : "border-input bg-background/60 dark:border-white/10 dark:bg-white/[0.02]",
+                  )}
+                >
+                  {/* Linked state accent line */}
+                  <div
+                    className={cn(
+                      "absolute inset-y-0 left-0 w-[2px] transition-all duration-300",
+                      selectedVercelProject
+                        ? "bg-foreground/70 dark:bg-white/50"
+                        : "bg-transparent",
                     )}
+                  />
 
-                    {repoProjectsError ? (
-                      <p className="text-xs text-destructive">
-                        Couldn&apos;t load Vercel projects:{" "}
-                        {repoProjectsError.message}
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors duration-300",
+                        selectedVercelProject
+                          ? "bg-foreground text-background dark:bg-white dark:text-neutral-900"
+                          : "bg-muted/80 text-muted-foreground dark:bg-white/[0.06] dark:text-neutral-500",
+                      )}
+                    >
+                      <VercelTriangleIcon className="h-3 w-3" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">
+                          Vercel project
+                        </p>
+                        {selectedVercelProject && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-medium text-foreground/70 dark:bg-white/10 dark:text-white/60">
+                            <Check className="h-2.5 w-2.5" />
+                            Linked
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {selectedVercelProject ? (
+                          <>
+                            Dev environment variables from{" "}
+                            <span className="font-medium text-foreground/80 dark:text-white/70">
+                              {selectedVercelProject.projectName}
+                            </span>{" "}
+                            will sync to{" "}
+                            <code className="rounded bg-muted/80 px-1 py-0.5 text-[11px] dark:bg-white/[0.06]">
+                              .env.local
+                            </code>
+                          </>
+                        ) : (
+                          <>
+                            Sync Development environment variables to{" "}
+                            <code className="rounded bg-muted/80 px-1 py-0.5 text-[11px] dark:bg-white/[0.06]">
+                              .env.local
+                            </code>{" "}
+                            when the sandbox is created.
+                          </>
+                        )}
                       </p>
-                    ) : selectedVercelProject?.isSavedDefault ? (
-                      <p className="text-xs text-muted-foreground">
-                        Using your remembered Vercel project for this
-                        repository.
-                      </p>
-                    ) : repoProjects.length === 1 && selectedVercelProject ? (
-                      <p className="text-xs text-muted-foreground">
-                        Auto-selected the only matching Vercel project.
-                      </p>
-                    ) : null}
+
+                      <div className="mt-2.5">
+                        {isProjectLookupPending ? (
+                          <div className="flex h-9 items-center gap-2 rounded-md border border-dashed border-input/60 px-3 text-sm text-muted-foreground dark:border-white/[0.08]">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span className="text-xs">
+                              Finding matching projects…
+                            </span>
+                          </div>
+                        ) : repoProjects.length > 0 ? (
+                          <Select
+                            value={selectedVercelProjectId}
+                            onValueChange={setSelectedVercelProjectId}
+                          >
+                            <SelectTrigger className="w-full bg-background/80 text-sm dark:bg-white/[0.03]">
+                              <SelectValue placeholder="Choose a Vercel project" />
+                            </SelectTrigger>
+                            <SelectContent align="start" position="popper">
+                              <SelectItem value={NO_VERCEL_PROJECT_VALUE}>
+                                Don&apos;t sync env variables
+                              </SelectItem>
+                              {repoProjects.map((project) => (
+                                <SelectItem
+                                  key={project.projectId}
+                                  value={project.projectId}
+                                >
+                                  {getVercelProjectLabel(project)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="rounded-md border border-dashed border-input/60 px-3 py-2 text-xs text-muted-foreground dark:border-white/[0.08]">
+                            No matching project found for this repository.
+                          </div>
+                        )}
+
+                        {repoProjectsError ? (
+                          <p className="mt-1.5 text-xs text-destructive">
+                            Couldn&apos;t load projects:{" "}
+                            {repoProjectsError.message}
+                          </p>
+                        ) : selectedVercelProject?.isSavedDefault ? (
+                          <p className="mt-1.5 text-[11px] text-muted-foreground/70">
+                            Remembered from last time
+                          </p>
+                        ) : repoProjects.length === 1 &&
+                          selectedVercelProject ? (
+                          <p className="mt-1.5 text-[11px] text-muted-foreground/70">
+                            Auto-selected the only matching project
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

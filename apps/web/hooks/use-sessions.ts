@@ -17,6 +17,7 @@ export type SessionWithUnread = Pick<
   | "prNumber"
   | "prStatus"
   | "createdAt"
+  | "vercelProjectName"
 > & {
   hasUnread: boolean;
   hasStreaming: boolean;

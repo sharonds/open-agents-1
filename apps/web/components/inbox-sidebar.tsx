@@ -7,6 +7,7 @@ import {
   Pencil,
   Plus,
   Settings,
+  Triangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -117,6 +118,23 @@ function DiffStats({
   );
 }
 
+function VercelProjectBadge({
+  projectName,
+}: {
+  projectName: string | null;
+}) {
+  if (!projectName) return null;
+
+  return (
+    <span
+      className="flex items-center gap-0.5 text-[10px] text-muted-foreground/70"
+      title={`Linked to Vercel project: ${projectName}`}
+    >
+      <Triangle className="h-2 w-2 fill-current" />
+    </span>
+  );
+}
+
 function PrBadge({
   prNumber,
   status,
@@ -215,6 +233,9 @@ const SessionRow = memo(function SessionRow({
               <span className="text-muted-foreground/60">Working...</span>
             )}
             <span className="ml-auto flex shrink-0 items-center gap-1.5">
+              <VercelProjectBadge
+                projectName={session.vercelProjectName}
+              />
               <PrBadge prNumber={session.prNumber} status={session.prStatus} />
               <DiffStats
                 added={session.linesAdded}
@@ -278,6 +299,7 @@ function areSessionRowsEqual(
     prev.session.prStatus === next.session.prStatus &&
     prev.session.linesAdded === next.session.linesAdded &&
     prev.session.linesRemoved === next.session.linesRemoved &&
+    prev.session.vercelProjectName === next.session.vercelProjectName &&
     String(prev.session.lastActivityAt) === String(next.session.lastActivityAt)
   );
 }
