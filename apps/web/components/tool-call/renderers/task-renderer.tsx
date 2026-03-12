@@ -230,13 +230,6 @@ export function TaskRenderer({
 
   const expandedContent = hasExpandableContent ? (
     <div className="space-y-3">
-      {/* Live tool activity when running */}
-      {currentToolLabel && (
-        <div className="font-mono text-xs text-muted-foreground">
-          {currentToolLabel}
-        </div>
-      )}
-
       {/* Task prompt */}
       {fullPrompt && (
         <div>
@@ -246,6 +239,13 @@ export function TaskRenderer({
           <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-xs text-foreground">
             {fullPrompt}
           </pre>
+        </div>
+      )}
+
+      {/* Live tool activity when running */}
+      {currentToolLabel && (
+        <div className="font-mono text-xs text-muted-foreground">
+          {currentToolLabel}
         </div>
       )}
 
