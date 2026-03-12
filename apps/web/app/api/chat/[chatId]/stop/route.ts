@@ -1,61 +1,116 @@
-import { getChatById, getSessionById } from "@/lib/db/sessions";
+import { getRun } from "workflow/api";
+import type { WebAgentUIMessage } from "@/app/types";
 import {
-  createRedisClient,
-  isRedisConfigured,
-  warnRedisDisabled,
-} from "@/lib/redis";
+  getChatById,
+  getSessionById,
+  updateChatActiveStreamId,
+  updateChatAssistantActivity,
+  upsertChatMessageScoped,
+} from "@/lib/db/sessions";
 import { getServerSession } from "@/lib/session/get-server-session";
 
 type RouteContext = {
   params: Promise<{ chatId: string }>;
 };
 
-export async function POST(_request: Request, context: RouteContext) {
+type StopWorkflowRequestBody = {
+  assistantMessage?: WebAgentUIMessage;
+};
+
+export async function POST(request: Request, context: RouteContext) {
   const session = await getServerSession();
   if (!session?.user) {
     return Response.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   const { chatId } = await context.params;
-
   const chat = await getChatById(chatId);
   if (!chat) {
     return Response.json({ error: "Chat not found" }, { status: 404 });
   }
 
-  // Verify ownership through the session chain
   const sessionRecord = await getSessionById(chat.sessionId);
   if (!sessionRecord || sessionRecord.userId !== session.user.id) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Publish stop signal via Redis pub/sub
-  if (!isRedisConfigured()) {
-    warnRedisDisabled("Chat stop endpoint");
-    return Response.json(
-      {
-        error:
-          "Stop signaling is unavailable because REDIS_URL/KV_URL is not configured.",
-      },
-      { status: 503 },
-    );
-  }
-
-  const publisher = createRedisClient("stop-signal-publisher");
+  let body: StopWorkflowRequestBody = {};
   try {
-    await publisher.publish(`stop:${chatId}`, "stop");
-  } catch (error) {
-    console.error(
-      `[redis] Failed to publish stop signal for chat ${chatId}:`,
-      error,
-    );
-    return Response.json(
-      { error: "Failed to publish stop signal" },
-      { status: 502 },
-    );
-  } finally {
-    publisher.disconnect();
+    body = (await request.json()) as StopWorkflowRequestBody;
+  } catch {
+    body = {};
   }
 
-  return Response.json({ success: true });
+  if (
+    body.assistantMessage !== undefined &&
+    !isAssistantMessage(body.assistantMessage)
+  ) {
+    return Response.json(
+      { error: "assistantMessage must be an assistant UI message" },
+      { status: 400 },
+    );
+  }
+
+  if (body.assistantMessage) {
+    await persistAssistantSnapshot(chatId, body.assistantMessage);
+  }
+
+  if (!chat.activeStreamId) {
+    return Response.json({ status: "idle" });
+  }
+
+  if (!isWorkflowRunId(chat.activeStreamId)) {
+    await updateChatActiveStreamId(chatId, null);
+    return Response.json({ status: "idle" });
+  }
+
+  try {
+    await getRun(chat.activeStreamId).cancel();
+    return Response.json({ status: "cancelled" });
+  } catch {
+    return Response.json(
+      { error: "Failed to cancel workflow run" },
+      { status: 500 },
+    );
+  }
+}
+
+async function persistAssistantSnapshot(
+  chatId: string,
+  assistantMessage: WebAgentUIMessage,
+) {
+  const upsertResult = await upsertChatMessageScoped({
+    id: assistantMessage.id,
+    chatId,
+    role: "assistant",
+    parts: assistantMessage,
+  });
+
+  if (upsertResult.status === "inserted") {
+    await updateChatAssistantActivity(chatId, new Date());
+  }
+}
+
+function isWorkflowRunId(value: string) {
+  return value.startsWith("wrun_");
+}
+
+function isAssistantMessage(value: unknown): value is WebAgentUIMessage {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (!("id" in value) || typeof value.id !== "string") {
+    return false;
+  }
+
+  if (!("role" in value) || value.role !== "assistant") {
+    return false;
+  }
+
+  if (!("parts" in value) || !Array.isArray(value.parts)) {
+    return false;
+  }
+
+  return true;
 }

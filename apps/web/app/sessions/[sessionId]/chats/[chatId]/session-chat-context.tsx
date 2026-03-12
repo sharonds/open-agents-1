@@ -2,7 +2,6 @@
 
 import { type UseChatHelpers, useChat } from "@ai-sdk/react";
 import type { SandboxState } from "@open-harness/sandbox";
-import { isToolUIPart } from "ai";
 import {
   createContext,
   type ReactNode,
@@ -29,6 +28,7 @@ import {
 } from "@/hooks/use-session-git-status";
 import { useSessionSkills } from "@/hooks/use-session-skills";
 import { AbortableChatTransport } from "@/lib/abortable-chat-transport";
+import { shouldAutoSubmit } from "@/lib/chat/should-auto-submit";
 import {
   abortChatInstanceTransport,
   getOrCreateChatInstance,
@@ -210,46 +210,6 @@ const SessionChatContext = createContext<SessionChatContextValue | undefined>(
 // This avoids flicker/loading indicators when switching chats that share one sandbox.
 const sandboxInfoCache = new Map<string, SandboxInfo>();
 
-/**
- * Custom predicate for auto-submitting messages.
- * Unlike the default `lastAssistantMessageIsCompleteWithApprovalResponses`,
- * this also checks for tools waiting in `input-available` state (e.g., AskUserQuestion).
- */
-function shouldAutoSubmit({
-  messages,
-}: {
-  messages: WebAgentUIMessage[];
-}): boolean {
-  const lastMessage = messages[messages.length - 1];
-  if (!lastMessage || lastMessage.role !== "assistant") return false;
-
-  // Find the last step-start to get tools from the current step only
-  const lastStepStartIndex = lastMessage.parts.reduce(
-    (lastIndex, part, index) =>
-      part.type === "step-start" ? index : lastIndex,
-    -1,
-  );
-
-  // Get tool invocations from the last step (non-provider-executed)
-  const lastStepToolInvocations = lastMessage.parts
-    .slice(lastStepStartIndex + 1)
-    .filter(isToolUIPart)
-    .filter((part) => !part.providerExecuted);
-
-  // If no tool invocations, don't auto-submit
-  if (lastStepToolInvocations.length === 0) return false;
-
-  // Auto-submit only if ALL tools are in terminal state
-  // Terminal states: output-available, output-error, approval-responded
-  // NOT terminal: input-available (waiting for user input, e.g., AskUserQuestion)
-  return lastStepToolInvocations.every(
-    (part) =>
-      part.state === "output-available" ||
-      part.state === "output-error" ||
-      part.state === "approval-responded",
-  );
-}
-
 type SessionChatProviderProps = {
   session: Session;
   chat: Chat;
@@ -302,18 +262,22 @@ export function SessionChatProvider({
     () =>
       new AbortableChatTransport({
         api: "/api/chat",
-        body: () => {
+        prepareSendMessagesRequest: ({ messages }) => {
           const requestContextLimit = contextLimitRef.current;
+
           return {
-            sessionId: sessionRecord.id,
-            chatId: chatInfo.id,
-            ...(requestContextLimit !== null
-              ? {
-                  context: {
-                    contextLimit: requestContextLimit,
-                  },
-                }
-              : {}),
+            body: {
+              messages,
+              sessionId: sessionRecord.id,
+              chatId: chatInfo.id,
+              ...(requestContextLimit !== null
+                ? {
+                    context: {
+                      contextLimit: requestContextLimit,
+                    },
+                  }
+                : {}),
+            },
           };
         },
         prepareReconnectToStreamRequest: ({ id }) => ({
@@ -331,7 +295,7 @@ export function SessionChatProvider({
         id: chatInfo.id,
         transport,
         messages: initialMessages,
-        sendAutomaticallyWhen: shouldAutoSubmit,
+        sendAutomaticallyWhen: ({ messages }) => shouldAutoSubmit(messages),
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only create once per chatId; init values are only used at creation time
     [chatInfo.id],

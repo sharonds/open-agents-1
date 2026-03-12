@@ -1,6 +1,7 @@
 import type {
   DynamicToolUIPart,
   InferAgentUIMessage,
+  InferUIMessageChunk,
   InferUITools,
   LanguageModelUsage,
   ToolUIPart,
@@ -22,6 +23,7 @@ export type WebAgentUIMessage = InferAgentUIMessage<
   WebAgent,
   WebAgentMessageMetadata
 >;
+export type WebAgentUIMessageChunk = InferUIMessageChunk<WebAgentUIMessage>;
 export type WebAgentUIMessagePart = WebAgentUIMessage["parts"][number];
 export type WebAgentTools = WebAgent["tools"];
 export type WebAgentUITools = InferUITools<WebAgentTools>;

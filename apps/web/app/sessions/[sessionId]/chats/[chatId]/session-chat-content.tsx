@@ -1,7 +1,7 @@
 "use client";
 
 import type { AskUserQuestionInput, TaskToolUIPart } from "@open-harness/agent";
-import { isReasoningUIPart, isToolUIPart, type FileUIPart } from "ai";
+import { type FileUIPart, isReasoningUIPart, isToolUIPart } from "ai";
 import {
   Archive,
   ArchiveRestore,
@@ -42,6 +42,7 @@ import {
 import useSWR from "swr";
 import type { MergePullRequestResponse } from "@/app/api/sessions/[sessionId]/merge/route";
 import type { PrDeploymentResponse } from "@/app/api/sessions/[sessionId]/pr-deployment/route";
+import { useSessionLayout } from "@/app/sessions/[sessionId]/session-layout-context";
 import type {
   WebAgentUIMessage,
   WebAgentUIMessagePart,
@@ -73,19 +74,18 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { useSessionLayout } from "@/app/sessions/[sessionId]/session-layout-context";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Tooltip,
@@ -94,8 +94,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useAudioRecording } from "@/hooks/use-audio-recording";
 import { useFileSuggestions } from "@/hooks/use-file-suggestions";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useImageAttachments } from "@/hooks/use-image-attachments";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useSessionChats } from "@/hooks/use-session-chats";
 import { useSlashCommands } from "@/hooks/use-slash-commands";
@@ -109,8 +109,8 @@ import { ACCEPT_IMAGE_TYPES, isValidImageType } from "@/lib/image-utils";
 import { DEFAULT_CONTEXT_LIMIT } from "@/lib/models";
 import { getPrDeploymentRefreshInterval } from "@/lib/pr-deployment-polling";
 import { DEFAULT_SANDBOX_TIMEOUT_MS } from "@/lib/sandbox/config";
-import { fetcher } from "@/lib/swr";
 import { streamdownPlugins } from "@/lib/streamdown-config";
+import { fetcher } from "@/lib/swr";
 import { cn } from "@/lib/utils";
 import {
   type SandboxInfo,
@@ -3458,8 +3458,20 @@ export function SessionChatContent({
                       type="button"
                       size="icon"
                       onClick={() => {
+                        const latestAssistantMessage = messages
+                          .toReversed()
+                          .find((message) => message.role === "assistant");
+
                         fetch(`/api/chat/${chatInfo.id}/stop`, {
                           method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify(
+                            latestAssistantMessage
+                              ? { assistantMessage: latestAssistantMessage }
+                              : {},
+                          ),
                         }).catch(() => {});
                         stopChatStream();
                         setHasPendingResponse(false);

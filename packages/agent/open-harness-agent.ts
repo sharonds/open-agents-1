@@ -50,6 +50,7 @@ const callOptionsSchema = z.object({
   approval: approvalConfigSchema,
   model: z.custom<LanguageModel>().optional(),
   subagentModel: z.custom<LanguageModel>().optional(),
+  type: z.enum(["normal", "durable"]).optional(),
   customInstructions: z.string().optional(),
   skills: z.custom<SkillMetadata[]>().optional(),
   context: compactionContextSchema.optional(),
@@ -177,6 +178,7 @@ export const openHarnessAgent = new ToolLoopAgent({
     const approval: ApprovalConfig = options.approval;
     const callModel = options.model ?? model;
     const subagentModel = options.subagentModel;
+    const callType = options.type ?? "normal";
     const customInstructions = options.customInstructions;
     const sandbox = options.sandbox;
     const skills = options.skills ?? [];
@@ -204,6 +206,7 @@ export const openHarnessAgent = new ToolLoopAgent({
       ...settings,
       ...preparedPrompt,
       model: callModel,
+      stopWhen: callType === "durable" ? stepCountIs(1) : stepCountIs(200),
       tools: addCacheControl({
         tools: settings.tools ?? tools,
         model: callModel,
