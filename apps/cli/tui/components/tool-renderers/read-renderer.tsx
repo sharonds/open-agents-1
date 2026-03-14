@@ -21,7 +21,7 @@ export function ReadRenderer({ part, state }: ToolRendererProps<"tool-read">) {
     (startLine > 1 || endLine < totalLines);
 
   const meta = isPartialRead
-    ? `lines ${startLine}–${endLine}`
+    ? `[${startLine}–${endLine}]`
     : totalLines !== undefined
       ? `${totalLines} lines`
       : undefined;

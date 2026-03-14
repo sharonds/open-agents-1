@@ -54,10 +54,10 @@ export function ReadRenderer({
           <span className="text-foreground">{limit} lines</span>
         </div>
       )}
-      {lines !== undefined && (
+      {totalLines !== undefined && (
         <div>
-          <span className="text-muted-foreground">Total lines read: </span>
-          <span className="text-foreground">{lines}</span>
+          <span className="text-muted-foreground">Total lines: </span>
+          <span className="text-foreground">{totalLines}</span>
         </div>
       )}
     </div>
@@ -70,7 +70,7 @@ export function ReadRenderer({
       summaryClassName="font-mono"
       meta={
         isPartialRead
-          ? `lines ${startLine}–${endLine}`
+          ? `[${startLine}–${endLine}]`
           : totalLines !== undefined
             ? `${totalLines} lines`
             : undefined
