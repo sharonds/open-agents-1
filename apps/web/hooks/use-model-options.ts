@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { buildModelOptions, type ModelOption } from "@/lib/model-options";
 import type { AvailableModel } from "@/lib/models";
 import type { ModelVariant } from "@/lib/model-variants";
-import { fetcher } from "@/lib/swr";
+import { fetcher, fetcherNoStore } from "@/lib/swr";
 
 interface ModelsResponse {
   models: AvailableModel[];
@@ -28,7 +28,7 @@ export function useModelOptions(config: UseModelOptionsConfig = {}) {
     data: modelsData,
     error: modelsError,
     isLoading: modelsLoading,
-  } = useSWR<ModelsResponse>("/api/models", fetcher);
+  } = useSWR<ModelsResponse>("/api/models", fetcherNoStore);
 
   const {
     data: variantsData,
@@ -47,10 +47,44 @@ export function useModelOptions(config: UseModelOptionsConfig = {}) {
     [models, modelVariants],
   );
 
-  const modelOptions =
-    hasCompleteFetchedData || initialModelOptions.length === 0
-      ? fetchedModelOptions
-      : initialModelOptions;
+  const modelOptions = useMemo(() => {
+    if (!hasCompleteFetchedData && initialModelOptions.length > 0) {
+      return initialModelOptions;
+    }
+
+    if (initialModelOptions.length === 0) {
+      return fetchedModelOptions;
+    }
+
+    // SSR model options come from a direct function call and always have fresh
+    // models.dev context-window data.  The client-side SWR refetch goes through
+    // the /api/models CDN cache, which may serve a stale response where the
+    // models.dev enrichment timed out (e.g. 200k instead of 1M for Opus 4.6).
+    // Merge: use the fetched model list (it may contain newly added models) but
+    // preserve the larger context window from SSR data so a stale CDN response
+    // never downgrades the value the user sees.
+    const initialContextById = new Map<string, number>();
+    for (const option of initialModelOptions) {
+      if (option.contextWindow != null) {
+        initialContextById.set(option.id, option.contextWindow);
+      }
+    }
+
+    if (initialContextById.size === 0) {
+      return fetchedModelOptions;
+    }
+
+    return fetchedModelOptions.map((option) => {
+      const initialContext = initialContextById.get(option.id);
+      if (
+        initialContext != null &&
+        (option.contextWindow == null || initialContext > option.contextWindow)
+      ) {
+        return { ...option, contextWindow: initialContext };
+      }
+      return option;
+    });
+  }, [initialModelOptions, fetchedModelOptions, hasCompleteFetchedData]);
 
   return {
     modelOptions,
