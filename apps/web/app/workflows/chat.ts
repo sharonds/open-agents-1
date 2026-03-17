@@ -17,6 +17,8 @@ import {
   persistSandboxState,
   persistUserMessage,
   recordWorkflowUsage,
+  refreshDiffCache,
+  runAutoCommitStep,
 } from "./chat-post-finish";
 
 type Options = {
@@ -27,6 +29,14 @@ type Options = {
   modelId: string;
   agentOptions: OpenHarnessAgentCallOptions;
   maxSteps?: number;
+  /** Whether auto-commit+push should run after a natural finish. */
+  autoCommitEnabled?: boolean;
+  /** Session title for commit message generation. */
+  sessionTitle?: string;
+  /** GitHub repo owner (required for auto-commit and diff refresh). */
+  repoOwner?: string;
+  /** GitHub repo name (required for auto-commit). */
+  repoName?: string;
 };
 
 type Writable = WritableStream<UIMessageChunk>;
@@ -155,6 +165,29 @@ export async function runAgentWorkflow(options: Options) {
   const sandboxState = options.agentOptions.sandbox?.state;
   if (sandboxState) {
     await persistSandboxState(options.sessionId, sandboxState);
+  }
+
+  // Auto-commit if enabled and the agent finished naturally.
+  if (
+    !wasAborted &&
+    options.autoCommitEnabled &&
+    sandboxState &&
+    options.repoOwner &&
+    options.repoName
+  ) {
+    await runAutoCommitStep({
+      userId: options.userId,
+      sessionId: options.sessionId,
+      sessionTitle: options.sessionTitle ?? "",
+      repoOwner: options.repoOwner,
+      repoName: options.repoName,
+      sandboxState,
+    });
+  }
+
+  // Refresh the diff cache so the UI shows current changes.
+  if (sandboxState) {
+    await refreshDiffCache(options.sessionId, sandboxState);
   }
 
   await clearActiveStream(options.chatId, workflowRunId);

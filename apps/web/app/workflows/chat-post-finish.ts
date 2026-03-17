@@ -1,5 +1,5 @@
 import type { LanguageModelUsage } from "ai";
-import type { SandboxState } from "@open-harness/sandbox";
+import type { SandboxState, Sandbox } from "@open-harness/sandbox";
 import type { WebAgentUIMessage } from "@/app/types";
 import {
   compareAndSetChatActiveStreamId,
@@ -190,5 +190,48 @@ export async function recordWorkflowUsage(
     }
   } catch (error) {
     console.error("[workflow] Failed to record usage:", error);
+  }
+}
+
+export async function refreshDiffCache(
+  sessionId: string,
+  sandboxState: SandboxState,
+): Promise<void> {
+  "use step";
+  try {
+    const { connectSandbox } = await import("@open-harness/sandbox");
+    const { computeAndCacheDiff } = await import("@/lib/diff/compute-diff");
+    const sandbox: Sandbox = await connectSandbox(sandboxState);
+    await computeAndCacheDiff({ sandbox, sessionId });
+  } catch (error) {
+    console.error("[workflow] Failed to refresh diff cache:", error);
+  }
+}
+
+export async function runAutoCommitStep(params: {
+  userId: string;
+  sessionId: string;
+  sessionTitle: string;
+  repoOwner: string;
+  repoName: string;
+  sandboxState: SandboxState;
+}): Promise<void> {
+  "use step";
+  try {
+    const { connectSandbox } = await import("@open-harness/sandbox");
+    const { performAutoCommit } = await import(
+      "@/lib/chat/auto-commit-direct"
+    );
+    const sandbox = await connectSandbox(params.sandboxState);
+    await performAutoCommit({
+      sandbox,
+      userId: params.userId,
+      sessionId: params.sessionId,
+      sessionTitle: params.sessionTitle,
+      repoOwner: params.repoOwner,
+      repoName: params.repoName,
+    });
+  } catch (error) {
+    console.error("[workflow] Auto-commit failed:", error);
   }
 }
