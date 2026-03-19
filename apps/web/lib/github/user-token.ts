@@ -1,7 +1,5 @@
-import "server-only";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getGitHubAccount, updateGitHubAccountTokens } from "@/lib/db/accounts";
-import { getServerSession } from "@/lib/session/get-server-session";
 
 interface GitHubTokenRefreshResponse {
   access_token: string;
@@ -71,16 +69,15 @@ async function refreshGitHubToken(
 }
 
 /**
- * Get a valid GitHub access token for the current user.
+ * Get a valid GitHub access token for a specific user.
  * If the token is expired and a refresh token exists, refreshes inline
  * and updates the database (mirroring the Vercel token refresh flow).
  */
-export async function getUserGitHubToken(): Promise<string | null> {
-  const session = await getServerSession();
-  if (!session?.user?.id) return null;
-
+export async function getGitHubTokenForUserId(
+  userId: string,
+): Promise<string | null> {
   try {
-    const ghAccount = await getGitHubAccount(session.user.id);
+    const ghAccount = await getGitHubAccount(userId);
     if (!ghAccount?.accessToken) return null;
 
     // If no expiration is set, the token is non-expiring (classic OAuth)
@@ -113,7 +110,7 @@ export async function getUserGitHubToken(): Promise<string | null> {
     // permanently break the user's connection on the next request.
     const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
     try {
-      await updateGitHubAccountTokens(session.user.id, {
+      await updateGitHubAccountTokens(userId, {
         accessToken: encrypt(refreshed.access_token),
         refreshToken: encrypt(refreshed.refresh_token),
         expiresAt: newExpiresAt,
@@ -130,4 +127,15 @@ export async function getUserGitHubToken(): Promise<string | null> {
     console.error("Error fetching GitHub token:", error);
     return null;
   }
+}
+
+/**
+ * Get a valid GitHub access token for the current user.
+ */
+export async function getUserGitHubToken(): Promise<string | null> {
+  const { getServerSession } = await import("@/lib/session/get-server-session");
+  const session = await getServerSession();
+  if (!session?.user?.id) return null;
+
+  return getGitHubTokenForUserId(session.user.id);
 }

@@ -59,6 +59,7 @@ mock.module("@/lib/db/accounts", () => ({
 
 mock.module("@/lib/github/user-token", () => ({
   getUserGitHubToken: async () => null,
+  getGitHubTokenForUserId: async () => null,
 }));
 
 mock.module("@/lib/db/sessions", () => ({

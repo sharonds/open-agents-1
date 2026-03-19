@@ -89,6 +89,7 @@ mock.module("@/lib/github/app-auth", () => ({
 
 mock.module("@/lib/github/user-token", () => ({
   getUserGitHubToken: async () => userToken,
+  getGitHubTokenForUserId: async () => userToken,
 }));
 
 mock.module("@/lib/sandbox/utils", () => ({

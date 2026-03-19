@@ -142,6 +142,7 @@ mock.module("@/lib/skills-cache", () => ({
 
 mock.module("@/lib/github/user-token", () => ({
   getUserGitHubToken: async () => null,
+  getGitHubTokenForUserId: async () => null,
 }));
 
 mock.module("@/lib/sandbox/config", () => ({

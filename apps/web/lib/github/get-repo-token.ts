@@ -1,10 +1,9 @@
-import "server-only";
 import {
   getInstallationByAccountLogin,
   getInstallationsByUserId,
 } from "@/lib/db/installations";
 import { getInstallationToken } from "@/lib/github/app-auth";
-import { getUserGitHubToken } from "@/lib/github/user-token";
+import { getGitHubTokenForUserId } from "@/lib/github/user-token";
 
 type RepoTokenResult =
   | { token: string; type: "installation"; installationId: number }
@@ -59,7 +58,7 @@ export async function getRepoToken(
     }
   }
 
-  const userToken = await getUserGitHubToken();
+  const userToken = await getGitHubTokenForUserId(userId);
   if (userToken) {
     return { token: userToken, type: "user" };
   }
