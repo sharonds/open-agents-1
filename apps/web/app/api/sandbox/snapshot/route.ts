@@ -150,7 +150,7 @@ export async function PUT(req: Request) {
       return Response.json(
         {
           error:
-            "Snapshot is still being created. Please wait a few seconds and try again.",
+            "A saved workspace snapshot is still being prepared. Please wait a few seconds and try again.",
         },
         { status: 409 },
       );
@@ -160,7 +160,7 @@ export async function PUT(req: Request) {
       `[Snapshot Restore] session=${sessionId} error=no_snapshot sandboxType=${sandboxTypeLabel}`,
     );
     return Response.json(
-      { error: "No snapshot available for this session" },
+      { error: "No saved workspace snapshot is available for this session" },
       { status: 404 },
     );
   }
@@ -240,7 +240,7 @@ export async function PUT(req: Request) {
       `[Snapshot Restore] session=${sessionId} success=false error=${message}`,
     );
     return Response.json(
-      { error: `Failed to restore snapshot: ${message}` },
+      { error: `Failed to restore saved workspace: ${message}` },
       { status: 500 },
     );
   }

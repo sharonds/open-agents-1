@@ -1697,7 +1697,7 @@ export function SessionChatContent({
           return;
         }
 
-        setRestoreError(`Snapshot restore failed: ${errorMsg}`);
+        setRestoreError(`Saved workspace restore failed: ${errorMsg}`);
         return;
       }
 
@@ -1726,14 +1726,14 @@ export function SessionChatContent({
       const reconnected = await waitForSandboxReady();
       if (!reconnected) {
         setRestoreError(
-          "Snapshot restored, but reconnect did not complete yet. Try Resume sandbox again.",
+          "Saved workspace restored, but reconnect did not complete yet. Try Resume sandbox again.",
         );
       } else {
         void requestStatusSync("force");
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      setRestoreError(`Failed to restore snapshot: ${errorMsg}`);
+      setRestoreError(`Failed to restore saved workspace: ${errorMsg}`);
     } finally {
       setIsRestoringSnapshot(false);
     }
@@ -1756,8 +1756,8 @@ export function SessionChatContent({
         if (!reconnected) {
           setRestoreError(
             hasSnapshot
-              ? "Persistent sandbox resume did not complete. Try Resume sandbox again or restore the saved snapshot."
-              : "Persistent sandbox resume did not complete yet. Try again in a few seconds.",
+              ? "Resume did not complete. Try Resume sandbox again. If it still fails, you can fall back to the saved workspace snapshot."
+              : "Resume did not complete yet. Try again in a few seconds.",
           );
           return;
         }
