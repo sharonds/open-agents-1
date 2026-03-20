@@ -1831,10 +1831,10 @@ export function SessionChatContent({
   // Auto-commit itself runs server-side so it still happens when this page is
   // not open; the client just reconciles git, diff, and PR state.
   // Initialize to null (not `status`) so the first render always reconciles.
-  // When navigating back to a chat whose stream finished in the background,
-  // status is already "ready" but the optimistic streaming overlay may still
-  // be set. Starting from null makes `becameReady` true on mount, which clears
-  // the stale overlay immediately.
+  // On natural completion we intentionally keep the optimistic session-level
+  // streaming state until the sidebar summaries observe persisted assistant
+  // activity; clearing it here makes the sidebar dot flicker off and can drop
+  // background-finish notifications during route switches.
   const prevStatusRef = useRef<string | null>(null);
   useEffect(() => {
     const prevStatus = prevStatusRef.current;
@@ -1842,7 +1842,7 @@ export function SessionChatContent({
     const wasSubmitted = prevStatus === "submitted";
     const becameReady = status === "ready" && prevStatus !== "ready";
     const becameError = status === "error" && prevStatus !== "error";
-    const shouldClearStreaming = status === "error" || becameReady;
+    const shouldClearStreaming = status === "error";
     prevStatusRef.current = status;
 
     // Skip clearing the streaming overlay during unmount. Route teardown aborts

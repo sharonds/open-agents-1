@@ -21,6 +21,7 @@ interface SessionsResponse {
     hasUnread: boolean;
     hasStreaming: boolean;
     latestChatId: string | null;
+    latestAssistantMessageAt?: string | Date | null;
   }>;
 }
 
@@ -36,6 +37,7 @@ type CreateChatResult = {
 type StreamingOverlay = {
   setAt: number;
   seenServerStreaming: boolean;
+  baselineAssistantMessageAt: string | null;
 };
 
 type ChatOptimisticOverlay = {
@@ -47,6 +49,7 @@ type ChatOptimisticOverlay = {
 // but clear quickly when the server never confirms streaming (fast turns,
 // route switches, aborts) so the sidebar indicator doesn't linger.
 const STREAMING_RACE_GRACE_MS = 4_000;
+export const OPTIMISTIC_SESSION_STREAMING_TIMEOUT_MS = 20_000;
 const OVERLAY_INACTIVE_TTL_MS = 5 * 60_000;
 const STREAMING_REFRESH_INTERVAL_MS = 1_000;
 const IDLE_REFRESH_INTERVAL_MS = 8_000;
@@ -105,8 +108,118 @@ function overlaysEqual(
     left?.title === right.title &&
     left?.streaming?.setAt === right.streaming?.setAt &&
     left?.streaming?.seenServerStreaming ===
-      right.streaming?.seenServerStreaming
+      right.streaming?.seenServerStreaming &&
+    left?.streaming?.baselineAssistantMessageAt ===
+      right.streaming?.baselineAssistantMessageAt
   );
+}
+
+type SessionStreamingSummaryLike = {
+  id: string;
+  hasStreaming: boolean;
+  latestAssistantMessageAt?: string | Date | null;
+};
+
+function toAssistantTimestamp(
+  value: SessionStreamingSummaryLike["latestAssistantMessageAt"],
+): string | null {
+  if (!value) {
+    return null;
+  }
+
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+export function hasAssistantActivityAdvanced(
+  previous: string | null,
+  current: SessionStreamingSummaryLike["latestAssistantMessageAt"],
+): boolean {
+  const currentTimestamp = toAssistantTimestamp(current);
+  if (!currentTimestamp) {
+    return false;
+  }
+
+  if (!previous) {
+    return true;
+  }
+
+  const previousMs = Date.parse(previous);
+  const currentMs = Date.parse(currentTimestamp);
+  if (Number.isNaN(previousMs) || Number.isNaN(currentMs)) {
+    return currentTimestamp !== previous;
+  }
+
+  return currentMs > previousMs;
+}
+
+export function shouldApplyOptimisticSessionStreaming(input: {
+  hasStreaming: boolean;
+  latestAssistantMessageAt?: string | Date | null;
+  streamingOverlays: Array<
+    Pick<StreamingOverlay, "setAt" | "baselineAssistantMessageAt">
+  >;
+  now: number;
+  timeoutMs?: number;
+}): boolean {
+  const {
+    hasStreaming,
+    latestAssistantMessageAt,
+    streamingOverlays,
+    now,
+    timeoutMs = OPTIMISTIC_SESSION_STREAMING_TIMEOUT_MS,
+  } = input;
+
+  if (hasStreaming) {
+    return true;
+  }
+
+  return streamingOverlays.some((overlay) => {
+    if (
+      hasAssistantActivityAdvanced(
+        overlay.baselineAssistantMessageAt,
+        latestAssistantMessageAt,
+      )
+    ) {
+      return false;
+    }
+
+    return now - overlay.setAt < timeoutMs;
+  });
+}
+
+function getStreamingOverlays(sessionId: string): StreamingOverlay[] {
+  const overlay = sessionChatOverlays.get(sessionId);
+  if (!overlay) {
+    return [];
+  }
+
+  return Array.from(overlay.values()).flatMap((chatOverlay) =>
+    chatOverlay.streaming ? [chatOverlay.streaming] : [],
+  );
+}
+
+export function hasOptimisticSessionStreaming<
+  T extends SessionStreamingSummaryLike,
+>(session: T, now = Date.now()): boolean {
+  return shouldApplyOptimisticSessionStreaming({
+    hasStreaming: session.hasStreaming,
+    latestAssistantMessageAt: session.latestAssistantMessageAt,
+    streamingOverlays: getStreamingOverlays(session.id),
+    now,
+  });
+}
+
+export function applyOptimisticSessionStreaming<
+  T extends SessionStreamingSummaryLike,
+>(session: T, now = Date.now()): T {
+  if (!hasOptimisticSessionStreaming(session, now) || session.hasStreaming) {
+    return session;
+  }
+
+  return {
+    ...session,
+    hasStreaming: true,
+  };
 }
 
 export type SessionSummary = {
@@ -661,23 +774,8 @@ export function useSessionChats(
       throw new Error("Missing sessionId");
     }
 
-    if (isStreaming) {
-      updateOverlay(chatId, (overlay) => ({
-        ...overlay,
-        streaming: {
-          setAt: Date.now(),
-          seenServerStreaming: false,
-        },
-      }));
-    } else {
-      updateOverlay(chatId, (overlay) => {
-        const next = { ...overlay };
-        delete next.streaming;
-        return next;
-      });
-    }
-
-    void mutateSessionSummaries<SessionsResponse>(
+    let baselineAssistantMessageAt: string | null = null;
+    await mutateSessionSummaries<SessionsResponse>(
       "/api/sessions",
       (current) => {
         if (!current) {
@@ -688,6 +786,12 @@ export function useSessionChats(
         const sessions = current.sessions.map((session) => {
           if (session.id !== sessionId) {
             return session;
+          }
+
+          if (isStreaming) {
+            baselineAssistantMessageAt = toAssistantTimestamp(
+              session.latestAssistantMessageAt,
+            );
           }
 
           if (
@@ -709,6 +813,23 @@ export function useSessionChats(
       },
       { revalidate: false },
     );
+
+    if (isStreaming) {
+      updateOverlay(chatId, (overlay) => ({
+        ...overlay,
+        streaming: {
+          setAt: Date.now(),
+          seenServerStreaming: false,
+          baselineAssistantMessageAt,
+        },
+      }));
+    } else {
+      updateOverlay(chatId, (overlay) => {
+        const next = { ...overlay };
+        delete next.streaming;
+        return next;
+      });
+    }
 
     await mutate(
       (current) => {

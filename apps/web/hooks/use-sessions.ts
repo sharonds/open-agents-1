@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
+import {
+  applyOptimisticSessionStreaming,
+  hasOptimisticSessionStreaming,
+} from "@/hooks/use-session-chats";
 import type { Chat, Session } from "@/lib/db/schema";
 import { fetcher } from "@/lib/swr";
 
@@ -104,11 +108,13 @@ export function useSessions(options?: {
       fallbackData: initialData,
       revalidateOnMount: initialData ? false : undefined,
       refreshInterval: (latestData) => {
-        const hasStreamingSession = latestData?.sessions.some(
-          (s) => s.hasStreaming,
-        );
-        // Poll quickly while any session is streaming so we detect
-        // completion promptly for background-chat notifications.
+        const now = Date.now();
+        const hasStreamingSession =
+          latestData?.sessions.some((session) =>
+            hasOptimisticSessionStreaming(session, now),
+          ) ?? false;
+        // Poll quickly while any session is still working or while an
+        // optimistic streaming handoff is waiting for server confirmation.
         return hasStreamingSession ? 3_000 : 0;
       },
     },
@@ -123,7 +129,9 @@ export function useSessions(options?: {
     void mutate((current) => current ?? initialData, { revalidate: false });
   }, [enabled, initialData, mutate]);
 
-  const sessions = data?.sessions ?? [];
+  const sessions = (data?.sessions ?? []).map((session) =>
+    applyOptimisticSessionStreaming(session),
+  );
   const archivedCount = data?.archivedCount ?? 0;
 
   const createSession = useCallback(

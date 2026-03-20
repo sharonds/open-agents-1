@@ -4,6 +4,8 @@ import {
   applySessionSummaryFromChats,
   deriveSessionSummaryFromChats,
   didSessionSummaryChange,
+  hasAssistantActivityAdvanced,
+  shouldApplyOptimisticSessionStreaming,
   type SessionChatListItem,
 } from "./use-session-chats";
 
@@ -93,6 +95,76 @@ describe("didSessionSummaryChange", () => {
         },
       ),
     ).toBe(true);
+  });
+});
+
+describe("hasAssistantActivityAdvanced", () => {
+  test("returns true when the first assistant timestamp appears", () => {
+    expect(hasAssistantActivityAdvanced(null, "2026-03-20T10:00:00.000Z")).toBe(
+      true,
+    );
+  });
+
+  test("returns false when the timestamp is unchanged", () => {
+    expect(
+      hasAssistantActivityAdvanced(
+        "2026-03-20T10:00:00.000Z",
+        "2026-03-20T10:00:00.000Z",
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("shouldApplyOptimisticSessionStreaming", () => {
+  test("keeps the session working while optimistic streaming is still within the timeout", () => {
+    expect(
+      shouldApplyOptimisticSessionStreaming({
+        hasStreaming: false,
+        latestAssistantMessageAt: "2026-03-20T10:00:00.000Z",
+        streamingOverlays: [
+          {
+            setAt: 1_000,
+            baselineAssistantMessageAt: "2026-03-20T10:00:00.000Z",
+          },
+        ],
+        now: 5_000,
+        timeoutMs: 20_000,
+      }),
+    ).toBe(true);
+  });
+
+  test("drops optimistic streaming once assistant activity advances", () => {
+    expect(
+      shouldApplyOptimisticSessionStreaming({
+        hasStreaming: false,
+        latestAssistantMessageAt: "2026-03-20T10:00:02.000Z",
+        streamingOverlays: [
+          {
+            setAt: 1_000,
+            baselineAssistantMessageAt: "2026-03-20T10:00:00.000Z",
+          },
+        ],
+        now: 5_000,
+        timeoutMs: 20_000,
+      }),
+    ).toBe(false);
+  });
+
+  test("drops optimistic streaming after the timeout", () => {
+    expect(
+      shouldApplyOptimisticSessionStreaming({
+        hasStreaming: false,
+        latestAssistantMessageAt: null,
+        streamingOverlays: [
+          {
+            setAt: 1_000,
+            baselineAssistantMessageAt: null,
+          },
+        ],
+        now: 25_000,
+        timeoutMs: 20_000,
+      }),
+    ).toBe(false);
   });
 });
 
