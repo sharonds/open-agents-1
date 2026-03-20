@@ -22,6 +22,7 @@ type MockRunCommandParams = {
 };
 
 const createCalls: Array<Record<string, unknown>> = [];
+const getCalls: Array<Record<string, unknown>> = [];
 const runCommandCalls: MockRunCommandParams[] = [];
 const writeFilesCalls: Array<{ path: string; content: Buffer }[]> = [];
 let readFileToBufferResult: Buffer | null = Buffer.from("");
@@ -48,55 +49,44 @@ function domainForPort(port: number): string {
   return domain;
 }
 
+function createMockSdk(name: string) {
+  return {
+    name,
+    status: "running" as const,
+    currentSession: () => ({ sessionId: `sess-${name}` }),
+    routes: Array.from(portDomains.keys()).map((port) => {
+      const domain = portDomains.get(port) ?? `https://sbx-${port}.vercel.run`;
+      const subdomain = new URL(domain).host.replace(".vercel.run", "");
+      return { port, subdomain, url: domain };
+    }),
+    domain: (port: number) => domainForPort(port),
+    runCommand: async (params: MockRunCommandParams) => {
+      runCommandCalls.push(params);
+      lastRunCommandEnv = params.env;
+      return runCommandMock(params);
+    },
+    writeFiles: async (files: { path: string; content: Buffer }[]) => {
+      writeFilesCalls.push(files);
+    },
+    readFileToBuffer: async (_opts: { path: string }) => {
+      return readFileToBufferResult;
+    },
+    stop: async () => {},
+  };
+}
+
 mock.module("@vercel/sandbox", () => ({
   Sandbox: {
     create: async (params: Record<string, unknown>) => {
       createCalls.push(params);
-      return {
-        sandboxId: "sbx-created",
-        routes: Array.from(portDomains.keys()).map((port) => {
-          const domain =
-            portDomains.get(port) ?? `https://sbx-${port}.vercel.run`;
-          const subdomain = new URL(domain).host.replace(".vercel.run", "");
-          return { port, subdomain };
-        }),
-        domain: (port: number) => domainForPort(port),
-        runCommand: async (params: MockRunCommandParams) => {
-          runCommandCalls.push(params);
-          lastRunCommandEnv = params.env;
-          return runCommandMock(params);
-        },
-        writeFiles: async (files: { path: string; content: Buffer }[]) => {
-          writeFilesCalls.push(files);
-        },
-        readFileToBuffer: async (_opts: { path: string }) => {
-          return readFileToBufferResult;
-        },
-        stop: async () => {},
-      };
+      return createMockSdk(
+        typeof params.name === "string" ? params.name : "sbx-created",
+      );
     },
-    get: async ({ sandboxId }: { sandboxId: string }) => ({
-      sandboxId,
-      routes: Array.from(portDomains.keys()).map((port) => {
-        const domain =
-          portDomains.get(port) ?? `https://sbx-${port}.vercel.run`;
-        const subdomain = new URL(domain).host.replace(".vercel.run", "");
-        return { port, subdomain };
-      }),
-      domain: (port: number) => domainForPort(port),
-      runCommand: async (params: MockRunCommandParams) => {
-        runCommandCalls.push(params);
-        lastRunCommandEnv = params.env;
-        return runCommandMock(params);
-      },
-      writeFiles: async (files: { path: string; content: Buffer }[]) => {
-        writeFilesCalls.push(files);
-      },
-      readFileToBuffer: async (_opts: { path: string }) => {
-        return readFileToBufferResult;
-      },
-      stop: async () => {},
-    }),
+    get: async (params: { name: string; resume?: boolean }) => {
+      getCalls.push(params);
+      return createMockSdk(params.name);
+    },
   },
 }));
 
@@ -108,6 +98,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   createCalls.length = 0;
+  getCalls.length = 0;
   runCommandCalls.length = 0;
   writeFilesCalls.length = 0;
   readFileToBufferResult = Buffer.from("");
@@ -120,6 +111,16 @@ beforeEach(() => {
     stdout: async () => "",
   });
   lastRunCommandEnv = undefined;
+});
+
+describe("VercelSandbox.connect", () => {
+  test("gets existing sandboxes by name without auto-resume", async () => {
+    await sandboxModule.VercelSandbox.connect("sbx-test", {
+      remainingTimeout: 0,
+    });
+
+    expect(getCalls).toEqual([{ name: "sbx-test", resume: false }]);
+  });
 });
 
 describe("VercelSandbox.environmentDetails", () => {
@@ -210,6 +211,7 @@ describe("VercelSandbox.create", () => {
     });
 
     expect(createCalls.length).toBe(1);
+    expect(createCalls[0]?.persistent).toBe(false);
     expect(createCalls[0]?.source).toEqual({
       type: "snapshot",
       snapshotId: "snap-base-1",
@@ -233,6 +235,7 @@ describe("VercelSandbox.create", () => {
     });
 
     expect(createCalls.length).toBe(1);
+    expect(createCalls[0]?.persistent).toBe(false);
     expect(createCalls[0]?.source).toEqual({
       type: "snapshot",
       snapshotId: "snap-base-1",

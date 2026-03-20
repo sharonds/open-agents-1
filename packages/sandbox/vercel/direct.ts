@@ -1,5 +1,4 @@
 import { APIClient } from "@vercel/sandbox/dist/api-client";
-import { getCredentials } from "@vercel/sandbox/dist/utils/get-credentials";
 import type { Dirent } from "fs";
 import type { ExecResult, Sandbox, SandboxStats } from "../interface";
 import {
@@ -12,124 +11,38 @@ import {
   statDirect,
   writeFileDirect,
 } from "./direct-operations";
+import {
+  getSharedApiClient,
+  shouldReconnectAfterDirectError,
+  shouldReconnectAfterExecResult,
+} from "./direct-utils";
 import type { VercelState } from "./state";
-
 const DEFAULT_WORKING_DIRECTORY = "/vercel/sandbox";
-
-const NON_RECONNECTABLE_ERROR_PREFIXES = [
-  "ENOENT:",
-  "Failed to create directory:",
-  "Failed to read file:",
-  "Background command exited with code",
-  "Detached execution is not supported by this sandbox",
-] as const;
-
-/** Re-fetch credentials after this interval to handle token rotation. */
-const API_CLIENT_TTL_MS = 30 * 60 * 1000; // 30 minutes
-
-let sharedApiClientPromise: Promise<APIClient | null> | null = null;
-let sharedApiClientCreatedAt = 0;
-
-function isDirectSandboxConnectionDisabled(): boolean {
-  return process.env.OPEN_HARNESS_SANDBOX_REST === "0";
-}
-
-async function getSharedApiClient(): Promise<APIClient | null> {
-  if (isDirectSandboxConnectionDisabled()) {
-    return null;
-  }
-
-  if (
-    sharedApiClientPromise &&
-    Date.now() - sharedApiClientCreatedAt > API_CLIENT_TTL_MS
-  ) {
-    sharedApiClientPromise = null;
-  }
-
-  if (!sharedApiClientPromise) {
-    sharedApiClientCreatedAt = Date.now();
-    sharedApiClientPromise = (async () => {
-      try {
-        const credentials = await getCredentials();
-        return new APIClient({
-          teamId: credentials.teamId,
-          token: credentials.token,
-        });
-      } catch {
-        return null;
-      }
-    })();
-  }
-
-  return sharedApiClientPromise;
-}
-
-function isSandboxUnavailableMessage(message: string): boolean {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes("expected a stream of command data") ||
-    normalized.includes("status code 410") ||
-    (normalized.includes("sandbox") && normalized.includes("not found")) ||
-    (normalized.includes("sandbox") && normalized.includes("stopped"))
-  );
-}
-
-function shouldReconnectAfterDirectError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return true;
-  }
-
-  if (
-    NON_RECONNECTABLE_ERROR_PREFIXES.some((prefix) =>
-      error.message.startsWith(prefix),
-    )
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-function shouldReconnectAfterExecResult(result: ExecResult): boolean {
-  if (result.success) {
-    return false;
-  }
-
-  const combinedOutput = `${result.stderr}\n${result.stdout}`.trim();
-  if (!combinedOutput) {
-    return false;
-  }
-
-  return isSandboxUnavailableMessage(combinedOutput);
-}
-
 interface SandboxRoute {
   url: string;
   port: number;
 }
-
 class VercelDirectSandbox implements Sandbox {
   readonly type = "cloud" as const;
   readonly currentBranch = undefined;
   readonly hooks = undefined;
-
   readonly workingDirectory: string;
   readonly env?: Record<string, string>;
-
   private readonly client: APIClient;
   private readonly sandboxId: string;
+  private readonly sessionId: string;
   private readonly reconnect?: () => Promise<Sandbox>;
   private readonly persistedExpiresAt?: number;
-
   private fallbackSandbox: Sandbox | null = null;
   private fallbackSandboxPromise: Promise<Sandbox> | null = null;
 
-  /** Routes discovered via background getSandbox call. */
+  /** Routes discovered via background getSession call. */
   private routes: SandboxRoute[] | null = null;
 
   constructor(params: {
     client: APIClient;
     sandboxId: string;
+    sessionId: string;
     workingDirectory: string;
     env?: Record<string, string>;
     reconnect?: () => Promise<Sandbox>;
@@ -137,16 +50,17 @@ class VercelDirectSandbox implements Sandbox {
   }) {
     this.client = params.client;
     this.sandboxId = params.sandboxId;
+    this.sessionId = params.sessionId;
     this.workingDirectory = params.workingDirectory;
     this.env = params.env;
     this.reconnect = params.reconnect;
     this.persistedExpiresAt = params.expiresAt;
 
-    // Fire-and-forget: fetch sandbox metadata to discover routes for env var
+    // Fire-and-forget: fetch session metadata to discover routes for env var
     // injection (SANDBOX_HOST, SANDBOX_URL_<PORT>). This runs in the
     // background so it doesn't block the optimistic fast path.
     this.client
-      .getSandbox({ sandboxId: this.sandboxId })
+      .getSession({ sessionId: this.sessionId })
       .then((info) => {
         if (!this.fallbackSandbox && info.json.routes.length > 0) {
           this.routes = info.json.routes.map((r) => ({
@@ -267,7 +181,7 @@ class VercelDirectSandbox implements Sandbox {
 
   async readFile(path: string, encoding: "utf-8"): Promise<string> {
     return this.runWithReconnect({
-      runDirect: () => readFileDirect(this.client, this.sandboxId, path),
+      runDirect: () => readFileDirect(this.client, this.sessionId, path),
       runFallback: (sandbox) => sandbox.readFile(path, encoding),
     });
   }
@@ -281,7 +195,7 @@ class VercelDirectSandbox implements Sandbox {
       runDirect: () =>
         writeFileDirect({
           client: this.client,
-          sandboxId: this.sandboxId,
+          sessionId: this.sessionId,
           workingDirectory: this.workingDirectory,
           path,
           content,
@@ -295,7 +209,7 @@ class VercelDirectSandbox implements Sandbox {
       runDirect: () =>
         statDirect({
           client: this.client,
-          sandboxId: this.sandboxId,
+          sessionId: this.sessionId,
           workingDirectory: this.workingDirectory,
           env: this.env,
           path,
@@ -309,7 +223,7 @@ class VercelDirectSandbox implements Sandbox {
       runDirect: () =>
         accessDirect({
           client: this.client,
-          sandboxId: this.sandboxId,
+          sessionId: this.sessionId,
           workingDirectory: this.workingDirectory,
           env: this.env,
           path,
@@ -323,7 +237,7 @@ class VercelDirectSandbox implements Sandbox {
       runDirect: () =>
         mkdirDirect({
           client: this.client,
-          sandboxId: this.sandboxId,
+          sessionId: this.sessionId,
           workingDirectory: this.workingDirectory,
           env: this.env,
           path,
@@ -341,7 +255,7 @@ class VercelDirectSandbox implements Sandbox {
       runDirect: () =>
         readdirDirect({
           client: this.client,
-          sandboxId: this.sandboxId,
+          sessionId: this.sessionId,
           workingDirectory: this.workingDirectory,
           env: this.env,
           path,
@@ -361,7 +275,7 @@ class VercelDirectSandbox implements Sandbox {
 
     const result = await execDirect({
       client: this.client,
-      sandboxId: this.sandboxId,
+      sessionId: this.sessionId,
       command,
       cwd,
       timeoutMs,
@@ -384,7 +298,7 @@ class VercelDirectSandbox implements Sandbox {
       runDirect: () =>
         execDetachedDirect({
           client: this.client,
-          sandboxId: this.sandboxId,
+          sessionId: this.sessionId,
           command,
           cwd,
           env: this.getCommandEnv(),
@@ -406,7 +320,7 @@ class VercelDirectSandbox implements Sandbox {
       return;
     }
 
-    await this.client.stopSandbox({ sandboxId: this.sandboxId });
+    await this.client.stopSession({ sessionId: this.sessionId });
   }
 
   async extendTimeout(additionalMs: number): Promise<{ expiresAt: number }> {
@@ -437,6 +351,7 @@ class VercelDirectSandbox implements Sandbox {
     return {
       type: "vercel",
       sandboxId: this.sandboxId,
+      sessionId: this.sessionId,
       ...(expiresAt !== undefined ? { expiresAt } : {}),
     };
   }
@@ -444,6 +359,7 @@ class VercelDirectSandbox implements Sandbox {
 
 interface DirectConnectOptions {
   sandboxId: string;
+  sessionId?: string;
   workingDirectory?: string;
   env?: Record<string, string>;
   reconnect?: () => Promise<Sandbox>;
@@ -460,6 +376,10 @@ interface DirectConnectOptions {
 export async function tryConnectVercelSandboxDirect(
   options: DirectConnectOptions,
 ): Promise<Sandbox | null> {
+  if (!options.sessionId) {
+    return null;
+  }
+
   const client = await getSharedApiClient();
   if (!client) {
     return null;
@@ -468,6 +388,7 @@ export async function tryConnectVercelSandboxDirect(
   return new VercelDirectSandbox({
     client,
     sandboxId: options.sandboxId,
+    sessionId: options.sessionId,
     workingDirectory: options.workingDirectory ?? DEFAULT_WORKING_DIRECTORY,
     env: options.env,
     reconnect: options.reconnect,

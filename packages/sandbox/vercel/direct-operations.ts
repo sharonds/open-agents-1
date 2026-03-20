@@ -27,7 +27,7 @@ interface FinishedCommandResult {
 
 async function collectLogs(
   client: APIClient,
-  sandboxId: string,
+  sessionId: string,
   commandId: string,
   signal?: AbortSignal,
 ): Promise<CommandLogs> {
@@ -36,7 +36,7 @@ async function collectLogs(
   let combined = "";
 
   for await (const chunk of client.getLogs({
-    sandboxId,
+    sessionId,
     cmdId: commandId,
     signal,
   })) {
@@ -53,7 +53,7 @@ async function collectLogs(
 
 async function runCommandAndWait(params: {
   client: APIClient;
-  sandboxId: string;
+  sessionId: string;
   command: string;
   args?: string[];
   cwd?: string;
@@ -62,7 +62,7 @@ async function runCommandAndWait(params: {
   sudo?: boolean;
 }): Promise<FinishedCommandResult> {
   const commandStream = await params.client.runCommand({
-    sandboxId: params.sandboxId,
+    sessionId: params.sessionId,
     command: params.command,
     args: params.args ?? [],
     cwd: params.cwd,
@@ -74,7 +74,7 @@ async function runCommandAndWait(params: {
 
   const logsPromise = collectLogs(
     params.client,
-    params.sandboxId,
+    params.sessionId,
     commandStream.command.id,
     params.signal,
   );
@@ -89,10 +89,10 @@ async function runCommandAndWait(params: {
 
 export async function readFileDirect(
   client: APIClient,
-  sandboxId: string,
+  sessionId: string,
   path: string,
 ): Promise<string> {
-  const stream = await client.readFile({ sandboxId, path });
+  const stream = await client.readFile({ sessionId, path });
   if (stream === null) {
     throw new Error(`Failed to read file: ${path}`);
   }
@@ -103,7 +103,7 @@ export async function readFileDirect(
 
 export async function writeFileDirect(params: {
   client: APIClient;
-  sandboxId: string;
+  sessionId: string;
   workingDirectory: string;
   path: string;
   content: string;
@@ -113,7 +113,7 @@ export async function writeFileDirect(params: {
   if (parentDir) {
     await mkdirDirect({
       client: params.client,
-      sandboxId: params.sandboxId,
+      sessionId: params.sessionId,
       workingDirectory: params.workingDirectory,
       path: parentDir,
       options: { recursive: true },
@@ -121,7 +121,7 @@ export async function writeFileDirect(params: {
   }
 
   await params.client.writeFiles({
-    sandboxId: params.sandboxId,
+    sessionId: params.sessionId,
     cwd: params.workingDirectory,
     extractDir: "/",
     files: [
@@ -132,14 +132,14 @@ export async function writeFileDirect(params: {
 
 export async function statDirect(params: {
   client: APIClient;
-  sandboxId: string;
+  sessionId: string;
   workingDirectory: string;
   env?: Record<string, string>;
   path: string;
 }): Promise<SandboxStats> {
   const result = await runCommandAndWait({
     client: params.client,
-    sandboxId: params.sandboxId,
+    sessionId: params.sessionId,
     command: "stat",
     args: ["-c", "%F\t%s\t%Y", params.path],
     cwd: params.workingDirectory,
@@ -168,14 +168,14 @@ export async function statDirect(params: {
 
 export async function accessDirect(params: {
   client: APIClient;
-  sandboxId: string;
+  sessionId: string;
   workingDirectory: string;
   env?: Record<string, string>;
   path: string;
 }): Promise<void> {
   const result = await runCommandAndWait({
     client: params.client,
-    sandboxId: params.sandboxId,
+    sessionId: params.sessionId,
     command: "test",
     args: ["-e", params.path],
     cwd: params.workingDirectory,
@@ -192,7 +192,7 @@ export async function accessDirect(params: {
 
 export async function mkdirDirect(params: {
   client: APIClient;
-  sandboxId: string;
+  sessionId: string;
   workingDirectory: string;
   env?: Record<string, string>;
   path: string;
@@ -201,7 +201,7 @@ export async function mkdirDirect(params: {
   const args = params.options?.recursive ? ["-p", params.path] : [params.path];
   const result = await runCommandAndWait({
     client: params.client,
-    sandboxId: params.sandboxId,
+    sessionId: params.sessionId,
     command: "mkdir",
     args,
     cwd: params.workingDirectory,
@@ -219,14 +219,14 @@ export async function mkdirDirect(params: {
 
 export async function readdirDirect(params: {
   client: APIClient;
-  sandboxId: string;
+  sessionId: string;
   workingDirectory: string;
   env?: Record<string, string>;
   path: string;
 }): Promise<Dirent[]> {
   const result = await runCommandAndWait({
     client: params.client,
-    sandboxId: params.sandboxId,
+    sessionId: params.sessionId,
     command: "find",
     args: [
       params.path,
@@ -277,7 +277,7 @@ export async function readdirDirect(params: {
 
 export async function execDirect(params: {
   client: APIClient;
-  sandboxId: string;
+  sessionId: string;
   cwd: string;
   command: string;
   timeoutMs: number;
@@ -288,7 +288,7 @@ export async function execDirect(params: {
   try {
     const finished = await runCommandAndWait({
       client: params.client,
-      sandboxId: params.sandboxId,
+      sessionId: params.sessionId,
       command: "bash",
       args: ["-c", params.command],
       cwd: params.cwd,
@@ -334,13 +334,13 @@ export async function execDirect(params: {
 
 export async function execDetachedDirect(params: {
   client: APIClient;
-  sandboxId: string;
+  sessionId: string;
   command: string;
   cwd: string;
   env?: Record<string, string>;
 }): Promise<{ commandId: string }> {
   const commandResponse = await params.client.runCommand({
-    sandboxId: params.sandboxId,
+    sessionId: params.sessionId,
     command: "bash",
     args: ["-c", params.command],
     cwd: params.cwd,
@@ -355,7 +355,7 @@ export async function execDetachedDirect(params: {
 
   try {
     const finished = await params.client.getCommand({
-      sandboxId: params.sandboxId,
+      sessionId: params.sessionId,
       cmdId: commandId,
       wait: true,
       signal: quickProbeSignal,
@@ -365,7 +365,7 @@ export async function execDetachedDirect(params: {
     if (exitCode !== 0) {
       const logs = await collectLogs(
         params.client,
-        params.sandboxId,
+        params.sessionId,
         commandId,
       );
       const trimmedStderr = logs.stderr.trim();

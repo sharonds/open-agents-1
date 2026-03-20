@@ -19,6 +19,11 @@ export interface VercelSandboxConfig {
     newBranch?: string;
   };
   /**
+   * Optional explicit sandbox name.
+   * If omitted, Vercel generates a unique name.
+   */
+  name?: string;
+  /**
    * Git user configuration for commits.
    * Required if you want the agent to make commits.
    */
@@ -58,9 +63,15 @@ export interface VercelSandboxConfig {
    */
   baseSnapshotId?: string;
   /**
+   * Whether the sandbox should persist filesystem state between sessions.
+   * Defaults to false in this wrapper because Open Harness manages snapshots
+   * explicitly and still relies on v1-style stop/hibernate semantics.
+   */
+  persistent?: boolean;
+  /**
    * Lifecycle hooks for setup and teardown.
    * afterStart is called after the sandbox is created and configured.
-   * beforeStop is called before the sandbox is stopped.
+   * beforeStop is called before the sandbox stops.
    */
   hooks?: SandboxHooks;
 }
@@ -69,7 +80,10 @@ export interface VercelSandboxConfig {
  * Configuration for reconnecting to an existing sandbox.
  */
 export interface VercelSandboxConnectConfig {
-  /** The sandbox ID to reconnect to */
+  /**
+   * The sandbox name to reconnect to.
+   * Kept as `sandboxId` for backwards compatibility with existing callers.
+   */
   sandboxId: string;
   /** Environment variables to make available to commands */
   env?: Record<string, string>;

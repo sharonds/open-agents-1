@@ -47,9 +47,12 @@ export class VercelSandbox implements Sandbox {
   readonly type = "cloud" as const;
   /**
    * Unique identifier for this sandbox.
+   * This is the v2 sandbox name, exposed as `id` for backwards compatibility.
    * Use this to reconnect to an existing sandbox via `connectVercelSandbox({ sandboxId })`.
    */
   readonly id: string;
+  /** The underlying v2 sandbox name. */
+  readonly name: string;
   readonly workingDirectory: string;
   readonly env?: Record<string, string>;
   /**
@@ -96,6 +99,7 @@ export class VercelSandbox implements Sandbox {
   ) {
     this.sdk = sdk;
     this.id = id;
+    this.name = id;
     this.workingDirectory = workingDirectory;
     this.env = env;
     this.currentBranch = currentBranch;
@@ -337,6 +341,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
   ): Promise<VercelSandbox> {
     const {
       source,
+      name,
       gitUser,
       env,
       vcpus = 4,
@@ -344,6 +349,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
       runtime = "node22",
       ports,
       baseSnapshotId,
+      persistent = false,
       hooks,
     } = config;
 
@@ -362,6 +368,8 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
       resources: { vcpus },
       timeout: sdkTimeout,
       runtime,
+      persistent,
+      ...(name && { name }),
       ...(ports && { ports }),
     };
 
@@ -501,7 +509,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
 
     const sandbox = new VercelSandbox(
       sdk,
-      sdk.sandboxId,
+      sdk.name,
       workingDirectory,
       env,
       currentBranch,
@@ -520,7 +528,8 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
   }
 
   /**
-   * Connect to an existing Vercel Sandbox by ID.
+   * Connect to an existing Vercel Sandbox by name.
+   * The wrapper still accepts `sandboxId` terminology for backwards compatibility.
    */
   static async connect(
     sandboxId: string,
@@ -535,9 +544,20 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
       remainingTimeout?: number;
       /** Ports that were declared at creation time (for preview URL display) */
       ports?: number[];
+      /** Reuse an already-created SDK sandbox instance when available. */
+      sdk?: VercelSandboxSDK;
     } = {},
   ): Promise<VercelSandbox> {
-    const sdk = await VercelSandboxSDK.get({ sandboxId });
+    const sdk =
+      options.sdk ??
+      (await VercelSandboxSDK.get({
+        name: sandboxId,
+        resume: false,
+      }));
+
+    if (sdk.status !== "running" && sdk.status !== "pending") {
+      throw new Error(`Sandbox is stopped (status: ${sdk.status})`);
+    }
 
     // Use provided remainingTimeout or default to DEFAULT_RECONNECT_TIMEOUT_MS
     // This ensures timeout tracking is always enabled for reconnected sandboxes,
@@ -548,7 +568,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
 
     const sandbox = new VercelSandbox(
       sdk,
-      sandboxId,
+      sdk.name,
       DEFAULT_WORKING_DIRECTORY,
       options.env,
       undefined,
@@ -881,6 +901,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
     return {
       type: "vercel",
       sandboxId: this.id,
+      sessionId: this.sdk.currentSession().sessionId,
       expiresAt: this.expiresAt,
     };
   }

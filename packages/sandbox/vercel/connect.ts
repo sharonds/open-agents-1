@@ -58,6 +58,7 @@ export async function connectVercel(
     if (canUseOptimisticAttach(options)) {
       const directSandbox = await tryConnectVercelSandboxDirect({
         sandboxId: state.sandboxId,
+        sessionId: state.sessionId,
         env: options?.env,
         reconnect: connectManagedSandbox,
         expiresAt: state.expiresAt,
@@ -75,17 +76,19 @@ export async function connectVercel(
   if (state.snapshotId) {
     const sdk = await VercelSandboxSDK.create({
       source: { type: "snapshot", snapshotId: state.snapshotId },
+      persistent: false,
       ...(options?.timeout !== undefined && { timeout: options.timeout }),
       ...(options?.ports && { ports: options.ports }),
     });
 
-    // Wrap in VercelSandbox - use connect since SDK is already created
-    // Pass remainingTimeout so timeout tracking works correctly
-    const sandbox = await VercelSandbox.connect(sdk.sandboxId, {
+    // Wrap in VercelSandbox while reusing the created SDK instance so we don't
+    // re-fetch it by name. Pass remainingTimeout so timeout tracking works.
+    const sandbox = await VercelSandbox.connect(sdk.name, {
       env: options?.env,
       hooks: options?.hooks,
       remainingTimeout: options?.timeout,
       ports: options?.ports,
+      sdk,
     });
 
     // Configure git user if provided (not done automatically when restoring from snapshot)

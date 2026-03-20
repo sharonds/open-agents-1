@@ -9,7 +9,7 @@ class MockApiClient {
     throw new Error("Status code 410 is not ok");
   }
 
-  async getSandbox() {
+  async getSession() {
     return {
       json: {
         routes: [],
@@ -25,6 +25,7 @@ mock.module("@vercel/sandbox/dist/api-client", () => ({
 mock.module("@vercel/sandbox/dist/utils/get-credentials", () => ({
   getCredentials: async () => ({
     teamId: "team-1",
+    projectId: "project-1",
     token: "token-1",
   }),
 }));
@@ -75,6 +76,7 @@ describe("tryConnectVercelSandboxDirect", () => {
 
     const sandbox = await tryConnectVercelSandboxDirect({
       sandboxId: "sbx-1",
+      sessionId: "sess-1",
       reconnect,
       expiresAt: Date.now() + 60_000,
     });
@@ -95,5 +97,15 @@ describe("tryConnectVercelSandboxDirect", () => {
     });
     expect(runCommandCalls).toBe(1);
     expect(reconnect).toHaveBeenCalledTimes(1);
+  });
+
+  test("returns null when sessionId is unavailable", async () => {
+    const { tryConnectVercelSandboxDirect } = await directModulePromise;
+
+    const sandbox = await tryConnectVercelSandboxDirect({
+      sandboxId: "sbx-1",
+    });
+
+    expect(sandbox).toBeNull();
   });
 });
