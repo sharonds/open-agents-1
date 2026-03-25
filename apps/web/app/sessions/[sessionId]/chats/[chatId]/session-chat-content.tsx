@@ -122,6 +122,7 @@ import {
 } from "./session-chat-context";
 import { useStreamRecovery } from "./hooks/use-stream-recovery";
 import { useAutoCommitStatus } from "./hooks/use-auto-commit-status";
+import type { TerminalConnectionState } from "./terminal-panel";
 import {
   CommitActionHeaderButton,
   CommitActionMenuItem,
@@ -864,6 +865,8 @@ export function SessionChatContent({
   const [mobileShareOpen, setMobileShareOpen] = useState(false);
   const [chatSwitcherOpen, setChatSwitcherOpen] = useState(false);
   const [terminalPanelOpen, setTerminalPanelOpen] = useState(false);
+  const [terminalPanelConnectionStatus, setTerminalPanelConnectionStatus] =
+    useState<TerminalConnectionState | null>(null);
   const [terminalPanelUrl, setTerminalPanelUrl] = useState<string | null>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -2823,6 +2826,7 @@ export function SessionChatContent({
                 setTerminalPanelOpen(open);
                 if (!open) {
                   setTerminalPanelUrl(null);
+                  setTerminalPanelConnectionStatus(null);
                 }
               }}
             >
@@ -2832,7 +2836,35 @@ export function SessionChatContent({
               >
                 <SheetHeader className="border-b border-border px-4 py-3 pr-16">
                   <div className="flex items-center justify-between gap-3">
-                    <SheetTitle>Terminal</SheetTitle>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <SheetTitle>Terminal</SheetTitle>
+                      {terminalPanelConnectionStatus ? (
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-2 text-sm text-muted-foreground",
+                            terminalPanelConnectionStatus.state ===
+                              "connected" && "text-emerald-700",
+                            terminalPanelConnectionStatus.state === "error" &&
+                              "text-destructive",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "h-2.5 w-2.5 rounded-full bg-amber-500",
+                              terminalPanelConnectionStatus.state ===
+                                "connected" && "bg-emerald-500",
+                              terminalPanelConnectionStatus.state === "error" &&
+                                "bg-destructive",
+                              terminalPanelConnectionStatus.state ===
+                                "disconnected" && "bg-muted-foreground",
+                            )}
+                          />
+                          <span className="truncate">
+                            {terminalPanelConnectionStatus.label}
+                          </span>
+                        </span>
+                      ) : null}
+                    </div>
                     {terminalPanelUrl ? (
                       <Button asChild size="sm" variant="outline">
                         <a
@@ -2851,6 +2883,7 @@ export function SessionChatContent({
                   {terminalPanelOpen ? (
                     <TerminalPanel
                       sessionId={session.id}
+                      onTerminalStatusChange={setTerminalPanelConnectionStatus}
                       onTerminalUrlChange={setTerminalPanelUrl}
                     />
                   ) : null}
