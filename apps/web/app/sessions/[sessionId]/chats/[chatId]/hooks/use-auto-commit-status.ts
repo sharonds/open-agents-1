@@ -16,6 +16,46 @@ type UseAutoCommitStatusParams = {
   refresh: () => void;
 };
 
+type ReconcileOptimisticPostTurnPhaseParams = {
+  autoCreatePrEnabled: boolean;
+  sessionPostTurnPhase: SessionPostTurnPhase | null | undefined;
+  optimisticPhase: SessionPostTurnPhase | null;
+  hasExistingPr: boolean;
+  hasUncommittedChanges: boolean;
+  hasUnpushedCommits: boolean;
+};
+
+export function reconcileOptimisticPostTurnPhase({
+  autoCreatePrEnabled,
+  sessionPostTurnPhase,
+  optimisticPhase,
+  hasExistingPr,
+  hasUncommittedChanges,
+  hasUnpushedCommits,
+}: ReconcileOptimisticPostTurnPhaseParams): SessionPostTurnPhase | null {
+  if (sessionPostTurnPhase || !optimisticPhase) {
+    return optimisticPhase;
+  }
+
+  if (optimisticPhase === "auto_commit") {
+    if (hasUncommittedChanges || hasUnpushedCommits) {
+      return optimisticPhase;
+    }
+
+    if (hasExistingPr || !autoCreatePrEnabled) {
+      return null;
+    }
+
+    return "auto_pr";
+  }
+
+  if (optimisticPhase === "auto_pr" && hasExistingPr) {
+    return null;
+  }
+
+  return optimisticPhase;
+}
+
 /**
  * Tracks the navbar's post-stream git automation state.
  *
@@ -70,34 +110,31 @@ export function useAutoCommitStatus({
   }, [autoCommitEnabled, optimisticPhase]);
 
   useEffect(() => {
-    if (sessionPostTurnPhase || !optimisticPhase) {
+    const nextOptimisticPhase = reconcileOptimisticPostTurnPhase({
+      autoCreatePrEnabled,
+      sessionPostTurnPhase,
+      optimisticPhase,
+      hasExistingPr,
+      hasUncommittedChanges,
+      hasUnpushedCommits,
+    });
+
+    if (nextOptimisticPhase === optimisticPhase) {
       return;
     }
 
-    if (optimisticPhase === "auto_pr") {
-      if (hasExistingPr || (!hasUncommittedChanges && !hasUnpushedCommits)) {
-        serverPhaseSeenRef.current = false;
-        setOptimisticPhase(null);
-      }
-      return;
-    }
-
-    if (
-      optimisticPhase === "auto_commit" &&
-      !autoCreatePrEnabled &&
-      !hasUncommittedChanges &&
-      !hasUnpushedCommits
-    ) {
+    if (nextOptimisticPhase === null) {
       serverPhaseSeenRef.current = false;
-      setOptimisticPhase(null);
     }
+
+    setOptimisticPhase(nextOptimisticPhase);
   }, [
+    autoCreatePrEnabled,
     sessionPostTurnPhase,
     optimisticPhase,
     hasExistingPr,
     hasUncommittedChanges,
     hasUnpushedCommits,
-    autoCreatePrEnabled,
   ]);
 
   useEffect(() => {
