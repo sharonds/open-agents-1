@@ -126,7 +126,9 @@ import {
 } from "./session-chat-context";
 import { useStreamRecovery } from "./hooks/use-stream-recovery";
 import { useAutoCommitStatus } from "./hooks/use-auto-commit-status";
+import { useCodeEditor } from "./hooks/use-code-editor";
 import { useDevServer } from "./hooks/use-dev-server";
+import { CodeEditorMenuItems } from "./code-editor-menu-items";
 import {
   CommitActionHeaderButton,
   CommitActionMenuItem,
@@ -2447,6 +2449,10 @@ export function SessionChatContent({
     sessionId: session.id,
     canRun: canRunDevServer,
   });
+  const codeEditor = useCodeEditor({
+    sessionId: session.id,
+    canRun: canRunDevServer,
+  });
 
   const hasRepo = Boolean(session.cloneUrl);
   const hasExistingPr = session.prNumber != null;
@@ -2572,6 +2578,7 @@ export function SessionChatContent({
 
     window.open(targetUrl, "_blank", "noopener,noreferrer");
   };
+  const hasPreviewOrPrTarget = Boolean(prDeploymentUrl || existingPrUrl);
 
   const handleCommitted = useCallback(async () => {
     if (hasExistingPr || hasBranchPreviewLookup) {
@@ -2734,10 +2741,7 @@ export function SessionChatContent({
                         size="sm"
                         className="h-8 w-8 px-0 xl:w-auto xl:px-3"
                         onClick={openPreviewOrPr}
-                        disabled={
-                          isDeploymentStale ||
-                          (!prDeploymentUrl && !existingPrUrl)
-                        }
+                        disabled={!hasPreviewOrPrTarget}
                       >
                         {prDeploymentUrl ? (
                           isDeploymentStale ? (
@@ -2790,7 +2794,6 @@ export function SessionChatContent({
                     size="sm"
                     className="h-8 w-8 px-0 xl:w-auto xl:px-3"
                     onClick={openPreviewOrPr}
-                    disabled={isDeploymentStale}
                   >
                     {isDeploymentStale ? (
                       <>
@@ -2892,6 +2895,10 @@ export function SessionChatContent({
                   <DevServerMenuItems
                     canRun={canRunDevServer}
                     devServer={devServer}
+                  />
+                  <CodeEditorMenuItems
+                    canRun={canRunDevServer}
+                    codeEditor={codeEditor}
                   />
                   {supportsDiff && (
                     <DropdownMenuItem
