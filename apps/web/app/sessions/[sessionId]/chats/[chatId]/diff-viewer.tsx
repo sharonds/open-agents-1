@@ -11,7 +11,10 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
-import type { DiffFile, DiffResponse } from "@/app/api/sessions/[sessionId]/diff/route";
+import type {
+  DiffFile,
+  DiffResponse,
+} from "@/app/api/sessions/[sessionId]/diff/route";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,8 +38,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { defaultDiffOptions, splitDiffOptions } from "@/lib/diffs-config";
 import { fetcher } from "@/lib/swr";
 import { cn } from "@/lib/utils";
-import { useSessionChatWorkspaceContext } from "./session-chat-context";
-import { useSessionChatMetadataContext } from "./session-chat-context";
+import {
+  useSessionChatWorkspaceContext,
+  useSessionChatMetadataContext,
+} from "./session-chat-context";
 
 type DiffViewerProps = {
   open: boolean;
@@ -252,9 +257,7 @@ function ScopeDropdown({
           value={scope}
           onValueChange={(v) => onScopeChange(v as DiffScope)}
         >
-          <DropdownMenuRadioItem value="all">
-            All changes
-          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="all">All changes</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="uncommitted">
             <div className="flex flex-col">
               <span>Uncommitted changes</span>

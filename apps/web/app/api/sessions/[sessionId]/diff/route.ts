@@ -17,7 +17,11 @@ import {
   isSandboxUnavailableError,
 } from "@/lib/sandbox/utils";
 
-export type { DiffFile, DiffResponse, DiffScope } from "@/lib/diff/compute-diff";
+export type {
+  DiffFile,
+  DiffResponse,
+  DiffScope,
+} from "@/lib/diff/compute-diff";
 
 type RouteContext = {
   params: Promise<{ sessionId: string }>;
