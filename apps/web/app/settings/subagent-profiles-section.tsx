@@ -305,7 +305,16 @@ function SubagentFormDialog({
           {/* Skills */}
           <div className="grid gap-2">
             <div className="flex items-center justify-between gap-4">
-              <Label className="text-xs font-medium">Skills</Label>
+              <div>
+                <Label className="text-xs font-medium">Skills</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Install with{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+                    npx skills add owner/name
+                  </code>
+                  , then reference by name.
+                </p>
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -329,7 +338,7 @@ function SubagentFormDialog({
               >
                 <div className="grid gap-1">
                   <Label className="text-[11px] text-muted-foreground">
-                    Skill id
+                    Name
                   </Label>
                   <Input
                     value={skill.id}
@@ -339,7 +348,7 @@ function SubagentFormDialog({
                         id: event.target.value,
                       })
                     }
-                    placeholder="frontend-design"
+                    placeholder="e.g. frontend-design"
                     disabled={isSaving}
                     className="h-8 text-xs"
                   />
