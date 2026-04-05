@@ -67,7 +67,9 @@ interface SubagentProfilesSectionProps {
   profiles: CustomSubagentProfile[];
   modelItems: ModelItem[];
   defaultModelId: string;
+  exploreModelId: string;
   disabled: boolean;
+  onExploreModelChange: (modelId: string) => void;
   onSave: (profiles: CustomSubagentProfile[]) => Promise<void>;
 }
 
@@ -538,7 +540,9 @@ export function SubagentProfilesSection({
   profiles,
   modelItems,
   defaultModelId,
+  exploreModelId,
   disabled,
+  onExploreModelChange,
   onSave,
 }: SubagentProfilesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -642,14 +646,48 @@ export function SubagentProfilesSection({
       <div className="space-y-2">
         {/* Built-in Explore */}
         {builtInExplore ? (
-          <SubagentCard
-            name={builtInExplore.name}
-            description={builtInExplore.description}
-            modelLabel="Default model"
-            toolCount={builtInExplore.allowedTools.length}
-            builtIn
-            isSaving={isSaving || disabled}
-          />
+          <div className="rounded-lg border border-border bg-card">
+            <div className="flex items-start gap-3 p-3.5">
+              <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/70">
+                <Bot className="size-3.5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium leading-tight">
+                    {builtInExplore.name}
+                  </h3>
+                  <span className="shrink-0 rounded-sm bg-muted/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Built-in
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {builtInExplore.description}
+                </p>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground">
+                    {builtInExplore.allowedTools.length} tools
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-border/60 px-3.5 py-3">
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-medium">Model</Label>
+                <ModelCombobox
+                  value={exploreModelId}
+                  items={[
+                    { id: "auto", label: "Same as default model" },
+                    ...modelItems,
+                  ]}
+                  placeholder="Select a model"
+                  searchPlaceholder="Search models..."
+                  emptyText="No models found."
+                  disabled={disabled || isSaving}
+                  onChange={onExploreModelChange}
+                />
+              </div>
+            </div>
+          </div>
         ) : null}
 
         {/* Custom subagents */}

@@ -47,11 +47,26 @@ export function SubagentsSection() {
   const selectedDefaultModelId =
     preferences?.defaultModelId ?? getDefaultModelOptionId(modelOptions);
 
+  const exploreModelId = preferences?.defaultSubagentModelId ?? "auto";
+
   const subagentModelOptions = useMemo(
     () =>
       withMissingModelOption(modelOptions, preferences?.defaultSubagentModelId),
     [modelOptions, preferences?.defaultSubagentModelId],
   );
+
+  const handleExploreModelChange = async (value: string) => {
+    setIsSaving(true);
+    try {
+      await updatePreferences({
+        defaultSubagentModelId: value === "auto" ? null : value,
+      });
+    } catch (error) {
+      console.error("Failed to update explore model preference:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSubagentProfilesSave = async (
     subagentProfiles: CustomSubagentProfile[],
@@ -90,7 +105,9 @@ export function SubagentsSection() {
             isVariant: option.isVariant,
           }))}
           defaultModelId={selectedDefaultModelId}
+          exploreModelId={exploreModelId}
           disabled={isSaving || modelOptionsLoading}
+          onExploreModelChange={handleExploreModelChange}
           onSave={handleSubagentProfilesSave}
         />
       </CardContent>
