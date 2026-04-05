@@ -59,6 +59,20 @@ export function canOperateOnSandbox(
 }
 
 /**
+ * Check if an unknown value represents legacy runtime sandbox state.
+ * Legacy sessions only have a live VM identity while `sandboxId` is present.
+ */
+export function hasLegacyRuntimeSandboxState(state: unknown): boolean {
+  if (!state || typeof state !== "object") return false;
+
+  const sandboxState = state as {
+    sandboxId?: unknown;
+  };
+
+  return hasNonEmptyString(sandboxState.sandboxId);
+}
+
+/**
  * Check if an unknown value represents sandbox state with runtime data.
  * Returns true if the state has a persistent `name` or a legacy `sandboxId`.
  */
@@ -67,12 +81,10 @@ export function hasRuntimeSandboxState(state: unknown): boolean {
 
   const sandboxState = state as {
     name?: unknown;
-    sandboxId?: unknown;
   };
 
   return (
-    hasNonEmptyString(sandboxState.name) ||
-    hasNonEmptyString(sandboxState.sandboxId)
+    hasNonEmptyString(sandboxState.name) || hasLegacyRuntimeSandboxState(state)
   );
 }
 

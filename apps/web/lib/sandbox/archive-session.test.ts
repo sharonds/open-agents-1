@@ -15,6 +15,7 @@ interface TestSessionRecord {
   sandboxState: {
     type: "vercel";
     sandboxId?: string;
+    name?: string;
   } | null;
   snapshotUrl: string | null;
   lifecycleState: "active" | "archived" | null;
@@ -196,6 +197,47 @@ beforeEach(() => {
 });
 
 describe("archiveSession", () => {
+  test("stops persistent sandboxes inline and skips background snapshot finalization", async () => {
+    const { archiveSession } = await archiveSessionModulePromise;
+
+    const stop = mock(async () => {});
+    sessionRecord = makeSessionRecord({
+      sandboxState: {
+        type: "vercel",
+        name: "session_session-1",
+      },
+    });
+    sandboxQueue = [createMockSandbox(), createMockSandbox({ stop })];
+
+    let scheduled = false;
+
+    const result = await archiveSession("session-1", {
+      logPrefix: "[Test]",
+      scheduleBackgroundWork: () => {
+        scheduled = true;
+      },
+    });
+
+    expect(result.archiveTriggered).toBe(true);
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(scheduled).toBe(false);
+
+    const updateCalls = spies.updateSession.mock.calls as Array<
+      [string, Record<string, unknown>]
+    >;
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]?.[1]).toMatchObject({
+      status: "archived",
+      lifecycleState: "archived",
+      lifecycleError: null,
+      sandboxState: {
+        type: "vercel",
+        name: "session_session-1",
+      },
+    });
+  });
+
   test("clears runtime sandbox state when archive finalization fails without a snapshot", async () => {
     const { archiveSession } = await archiveSessionModulePromise;
 

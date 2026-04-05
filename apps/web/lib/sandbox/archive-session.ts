@@ -265,6 +265,28 @@ export async function archiveSession(
     ...options.update,
   };
 
+  const persistentSandboxState =
+    shouldStopSandboxAfterArchive &&
+    canOperateOnSandbox(currentSession.sandboxState) &&
+    isPersistentSandbox(currentSession.sandboxState)
+      ? currentSession.sandboxState
+      : null;
+
+  if (persistentSandboxState) {
+    try {
+      const sandbox = await connectSandbox(persistentSandboxState);
+      await sandbox.stop();
+      updatePayload.sandboxState = clearSandboxState(persistentSandboxState);
+      updatePayload.lifecycleError = null;
+    } catch (error) {
+      console.error(
+        `${logPrefix} Failed to stop persistent sandbox for archived session ${sessionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   if (shouldStopSandboxAfterArchive) {
     updatePayload.status = "archived";
     updatePayload.lifecycleState = "archived";
@@ -279,7 +301,7 @@ export async function archiveSession(
 
   const archiveTriggered = shouldStopSandboxAfterArchive && !!updatedSession;
 
-  if (archiveTriggered) {
+  if (archiveTriggered && !persistentSandboxState) {
     const runFinalize = () =>
       finalizeArchivedSessionSandbox(sessionId, logPrefix);
 

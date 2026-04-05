@@ -2369,8 +2369,13 @@ export function SessionChatContent({
     !isRestoringSnapshot;
   const isHibernatingTransition =
     isReconnectingSandbox && hasSnapshot && !hasRuntimeSandboxState;
+  const hasLegacyArchiveRuntimeState =
+    !!session.sandboxState &&
+    "sandboxId" in session.sandboxState &&
+    typeof session.sandboxState.sandboxId === "string" &&
+    session.sandboxState.sandboxId.length > 0;
   const isArchiveSnapshotPending =
-    isArchived && !hasSnapshot && hasRuntimeSandboxState;
+    isArchived && !hasSnapshot && hasLegacyArchiveRuntimeState;
   const isServerHibernating = lifecycleTiming.state === "hibernating";
   const isServerRestoring = lifecycleTiming.state === "restoring";
   const isServerHibernated = lifecycleTiming.state === "hibernated";
