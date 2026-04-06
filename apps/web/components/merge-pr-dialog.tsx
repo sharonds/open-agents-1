@@ -275,12 +275,8 @@ export function MergePrDialog({
         <MergePrDialogActions
           canViewDiff={canViewDiff}
           canOpenPullRequest={Boolean(pullRequestUrl)}
-          isLoadingReadiness={isLoadingReadiness}
           isSubmitting={isSubmitting}
           onOpenPullRequest={openPullRequest}
-          onRefresh={() => {
-            void loadReadiness();
-          }}
           onViewDiff={onViewDiff}
         />
 
@@ -304,6 +300,10 @@ export function MergePrDialog({
                         }
                       : undefined
                   }
+                  onRefresh={() => {
+                    void loadReadiness();
+                  }}
+                  isRefreshing={isLoadingReadiness}
                 />
               ) : null}
 
