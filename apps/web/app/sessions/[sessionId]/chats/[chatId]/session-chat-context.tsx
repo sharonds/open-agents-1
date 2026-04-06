@@ -78,6 +78,21 @@ function toMs(value: Date | null | undefined): number | null {
   return value ? value.getTime() : null;
 }
 
+function buildLifecyclePayloadFromSession(
+  session: Pick<
+    Session,
+    "lifecycleState" | "lastActivityAt" | "hibernateAfter" | "sandboxExpiresAt"
+  >,
+): ReconnectResponse["lifecycle"] {
+  return {
+    serverTime: Date.now(),
+    state: session.lifecycleState ?? null,
+    lastActivityAt: toMs(session.lastActivityAt),
+    hibernateAfter: toMs(session.hibernateAfter),
+    sandboxExpiresAt: toMs(session.sandboxExpiresAt),
+  };
+}
+
 function toPositiveInteger(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return null;
@@ -892,6 +907,15 @@ export function SessionChatProvider({
     }
 
     const nextSession = data.session ?? optimisticSession;
+    const nextHasSavedSandbox =
+      hasResumableSandboxStateValue(nextSession.sandboxState) ||
+      Boolean(nextSession.snapshotUrl);
+
+    setSandboxInfoState(null);
+    sandboxInfoCache.delete(sessionId);
+    setReconnectionStatus(nextHasSavedSandbox ? "no_sandbox" : "idle");
+    setHasSnapshotState(nextHasSavedSandbox);
+    applyLifecycleTiming(buildLifecyclePayloadFromSession(nextSession));
     setSessionRecord(nextSession);
     await mutate<SessionsResponse>(
       "/api/sessions",
@@ -908,7 +932,7 @@ export function SessionChatProvider({
           : current,
       { revalidate: true },
     );
-  }, [sessionRecord, mutate]);
+  }, [sessionRecord, mutate, sessionId, applyLifecycleTiming]);
 
   const unarchiveSession = useCallback(async () => {
     // Wait for server confirmation before updating local state so that
@@ -931,6 +955,15 @@ export function SessionChatProvider({
       status: "running",
       lifecycleState: null,
     };
+    const nextHasSavedSandbox =
+      hasResumableSandboxStateValue(nextSession.sandboxState) ||
+      Boolean(nextSession.snapshotUrl);
+
+    setSandboxInfoState(null);
+    sandboxInfoCache.delete(sessionId);
+    setReconnectionStatus(nextHasSavedSandbox ? "no_sandbox" : "idle");
+    setHasSnapshotState(nextHasSavedSandbox);
+    applyLifecycleTiming(buildLifecyclePayloadFromSession(nextSession));
     setSessionRecord(nextSession);
     await mutate<SessionsResponse>(
       "/api/sessions",
@@ -947,7 +980,7 @@ export function SessionChatProvider({
           : current,
       { revalidate: true },
     );
-  }, [sessionRecord, mutate]);
+  }, [sessionRecord, mutate, sessionId, applyLifecycleTiming]);
 
   const updateSessionTitle = useCallback(
     async (title: string) => {
