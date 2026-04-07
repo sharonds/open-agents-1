@@ -330,52 +330,61 @@ export function CheckRunsList({
 
   return (
     <div className="rounded-md border border-border bg-muted/40">
-      {/* ---- Header: clickable full-width row ---- */}
-      <button
-        type="button"
-        onClick={() => {
-          if (!showLoading) setDetailsOpen(!detailsOpen);
-        }}
-        className={cn(
-          "flex w-full items-center gap-2.5 p-3",
-          showLoading && "cursor-default",
-        )}
-      >
-        {showLoading ? (
-          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-muted-foreground" />
-        ) : (
-          <HeaderStatusIcon
-            passed={passed}
-            failed={failed}
-            pending={pending}
-            total={total}
-          />
-        )}
+      {/* ---- Header row ---- */}
+      <div className="flex items-center gap-2.5 p-3">
+        {/* Clickable toggle area — takes up remaining space */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!showLoading) setDetailsOpen(!detailsOpen);
+          }}
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-2.5",
+            showLoading && "cursor-default",
+          )}
+        >
+          {showLoading ? (
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-muted-foreground" />
+          ) : (
+            <HeaderStatusIcon
+              passed={passed}
+              failed={failed}
+              pending={pending}
+              total={total}
+            />
+          )}
 
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="text-sm font-medium text-foreground">Checks</span>
-          <span className="truncate text-xs text-muted-foreground">
-            {showLoading ? (
-              "Loading..."
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="text-sm font-medium text-foreground">Checks</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {showLoading ? (
+                "Loading..."
+              ) : (
+                <>
+                  {passed} passed
+                  {pending > 0 && `, ${pending} pending`}
+                  {failed > 0 && `, ${failed} failing`}
+                </>
+              )}
+            </span>
+          </div>
+
+          {!showLoading &&
+            (detailsOpen ? (
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
             ) : (
-              <>
-                {passed} passed
-                {pending > 0 && `, ${pending} pending`}
-                {failed > 0 && `, ${failed} failing`}
-              </>
-            )}
-          </span>
-        </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            ))}
+        </button>
 
+        {/* Action buttons — outside the toggle button */}
         {!showLoading && (
-          <>
-            {/* Fix errors button — only when there are failures */}
+          <div className="flex shrink-0 items-center gap-1">
             {failed > 0 && onFixChecks && (
               <button
                 type="button"
-                className="flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={(e) => {
-                  e.stopPropagation();
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={() => {
                   onFixChecks(checkRuns.filter((cr) => cr.state === "failed"));
                 }}
               >
@@ -384,31 +393,21 @@ export function CheckRunsList({
               </button>
             )}
 
-            {/* Refresh icon (stop propagation so it doesn't toggle) */}
             {onRefresh && (
               <button
                 type="button"
                 aria-label="Refresh checks"
                 className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRefresh();
-                }}
+                onClick={() => onRefresh()}
               >
                 <RefreshCw
                   className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
                 />
               </button>
             )}
-
-            {detailsOpen ? (
-              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-            )}
-          </>
+          </div>
         )}
-      </button>
+      </div>
 
       {/* ---- Expanded detail list ---- */}
       {detailsOpen && !showLoading && (

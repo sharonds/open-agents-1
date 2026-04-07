@@ -3846,47 +3846,28 @@ export function SessionChatContent({
           onFixChecks={async (failedRuns) => {
             setMergeDialogOpen(false);
 
-            // Use check run IDs (same as GitHub Actions job IDs) to fetch logs
-            const runsWithIds = failedRuns.filter((r) => r.id > 0);
-
-            let logs: Record<string, string> = {};
-            if (runsWithIds.length > 0 && session) {
-              try {
-                const jobIds = runsWithIds.map((r) => r.id).join(",");
-                const res = await fetch(
-                  `/api/sessions/${session.id}/checks/logs?jobIds=${jobIds}`,
-                );
-                if (res.ok) {
-                  const data = (await res.json()) as {
-                    logs: Record<string, string>;
-                  };
-                  logs = data.logs;
-                }
-              } catch {
-                // Continue without logs
+            let text = "";
+            try {
+              const res = await fetch(
+                `/api/sessions/${session.id}/checks/fix`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ checkRuns: failedRuns }),
+                },
+              );
+              if (res.ok) {
+                const data = (await res.json()) as { message: string };
+                text = data.message;
               }
+            } catch {
+              // Fall through to fallback
             }
 
-            const sections = failedRuns.map((run) => {
-              let section = `## ${run.name}`;
-              if (run.detailsUrl) {
-                section += `\n[View details](${run.detailsUrl})`;
-              }
-
-              const logText = run.id > 0 ? logs[String(run.id)] : undefined;
-              if (logText && logText !== "(Unable to fetch logs)") {
-                const maxLen = 8000;
-                const truncated =
-                  logText.length > maxLen
-                    ? `${logText.slice(0, maxLen)}\n\n... (truncated, ${logText.length - maxLen} more characters)`
-                    : logText;
-                section += `\n\n\`\`\`\n${truncated}\n\`\`\``;
-              }
-
-              return section;
-            });
-
-            const text = `# Fix Failing Checks\n\nThe following ${failedRuns.length === 1 ? "check is" : "checks are"} failing on this pull request. Please investigate the ${failedRuns.length === 1 ? "failure" : "failures"}, identify the root cause, and push a fix.\n\n${sections.join("\n\n---\n\n")}`;
+            if (!text) {
+              const names = failedRuns.map((r) => r.name).join(", ");
+              text = `# Fix Failing Checks\n\nThe following checks are failing: ${names}. Please investigate and push a fix.`;
+            }
 
             void sendMessageWithPendingState({ text });
           }}
