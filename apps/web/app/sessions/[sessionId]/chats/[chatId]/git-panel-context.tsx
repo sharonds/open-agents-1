@@ -40,7 +40,7 @@ type GitPanelContextValue = {
   /** Open the diff tab in the main content area, optionally focused on a file */
   openDiffToFile: (filePath: string) => void;
 
-  /** Diff scope: "local" = uncommitted only, "branch" = all changes vs base */
+  /** Diff scope: "uncommitted" = uncommitted only, "branch" = all changes vs base */
   diffScope: DiffScope;
   setDiffScope: (scope: DiffScope) => void;
 

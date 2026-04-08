@@ -1157,7 +1157,7 @@ export function GitPanel(props: GitPanelProps) {
   const showGitTab = hasExistingPr || (hasDiff && !hasUncommittedGitChanges);
 
   return (
-    <div className="flex h-full w-72 shrink-0 flex-col border-l border-border bg-background xl:w-80">
+    <div className="flex h-full flex-col bg-background">
       {/* Panel top bar: PR link or branch name — matches session header height */}
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-1.5">
         {/* Left: PR link or repo info */}

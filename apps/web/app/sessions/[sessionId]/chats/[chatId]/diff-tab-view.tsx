@@ -104,7 +104,7 @@ export function DiffTabView() {
     sandboxInfo,
     refreshDiff,
   } = useSessionChatWorkspaceContext();
-  const { focusedDiffFile, diffScope } = useGitPanel();
+  const { focusedDiffFile, setFocusedDiffFile, diffScope } = useGitPanel();
   const isMobile = useIsMobile();
   const { preferences } = useUserPreferences();
   const [diffStyle, setDiffStyle] = useState<DiffStyle>("unified");
@@ -114,6 +114,22 @@ export function DiffTabView() {
     if (!diff || !focusedDiffFile) return null;
     return diff.files.find((f) => f.path === focusedDiffFile) ?? null;
   }, [diff, focusedDiffFile]);
+
+  // When in uncommitted scope and the focused file has no local changes,
+  // auto-switch to the first file that does have uncommitted changes.
+  useEffect(() => {
+    if (diffScope !== "uncommitted" || !diff || !file) return;
+    const hasLocalChanges =
+      file.stagingStatus === "unstaged" || file.stagingStatus === "partial";
+    if (hasLocalChanges) return;
+
+    const firstUncommitted = diff.files.find(
+      (f) => f.stagingStatus === "unstaged" || f.stagingStatus === "partial",
+    );
+    if (firstUncommitted) {
+      setFocusedDiffFile(firstUncommitted.path);
+    }
+  }, [diffScope, diff, file, setFocusedDiffFile]);
 
   const showStaleIndicator = !sandboxInfo && diff !== null;
 
@@ -266,14 +282,10 @@ export function DiffTabView() {
               file.stagingStatus === "unstaged" ||
               file.stagingStatus === "partial";
 
+            // The effect above will auto-redirect to a file with changes;
+            // show nothing while that redirect is pending.
             if (isLocalScope && !hasLocalChanges) {
-              return (
-                <div className="px-4 py-8 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    No local changes — already committed on branch
-                  </p>
-                </div>
-              );
+              return null;
             }
 
             // In local scope, prefer the localDiff (uncommitted changes vs HEAD)

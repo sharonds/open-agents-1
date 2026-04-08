@@ -36,7 +36,7 @@ function SessionLayoutInner({
   activeChatId: string;
   children: ReactNode;
 }) {
-  const { panelPortalRef } = useGitPanel();
+  const { panelPortalRef, gitPanelOpen } = useGitPanel();
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -47,8 +47,16 @@ function SessionLayoutInner({
         <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
       </div>
 
-      {/* Portal target for the git panel — full page height */}
-      <div ref={panelPortalRef} className="contents" />
+      {/* Portal target for the git panel — reserves space when panel is open
+          so the layout doesn't shift during chat navigation. */}
+      <div
+        ref={panelPortalRef}
+        className={
+          gitPanelOpen
+            ? "flex h-full w-72 shrink-0 flex-col border-l border-border bg-background xl:w-80"
+            : "hidden"
+        }
+      />
     </div>
   );
 }

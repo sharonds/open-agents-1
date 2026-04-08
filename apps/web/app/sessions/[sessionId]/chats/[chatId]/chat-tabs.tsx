@@ -1,7 +1,7 @@
 "use client";
 
 import { GitCompare, Pencil, Plus, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSessionLayout } from "@/app/sessions/[sessionId]/session-layout-context";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,19 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Track the position where the Changes tab should appear in the tab list.
+  // When a diff file is first opened, record the current chat count so the
+  // Changes tab is inserted at that position (like any other tab).
+  const [changesTabIndex, setChangesTabIndex] = useState<number | null>(null);
+  useEffect(() => {
+    const isChangesVisible = !changesTabDismissed && !!focusedDiffFile;
+    if (isChangesVisible && changesTabIndex === null) {
+      setChangesTabIndex(chats.length);
+    } else if (!isChangesVisible) {
+      setChangesTabIndex(null);
+    }
+  }, [focusedDiffFile, changesTabDismissed, chats.length, changesTabIndex]);
 
   const handleNewChat = () => {
     const { chat } = createChat();
@@ -111,117 +124,139 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
           ref={scrollContainerRef}
           className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {chats.map((chat) => {
-            const isActive = chat.id === activeChatId && activeView === "chat";
-            const isRenaming = renamingChatId === chat.id;
+          {(() => {
+            const showChangesTab = !changesTabDismissed && !!focusedDiffFile;
+            const insertAt = showChangesTab
+              ? (changesTabIndex ?? chats.length)
+              : null;
 
-            return (
+            const changesTabEl = showChangesTab ? (
               <div
-                key={chat.id}
+                key="__changes__"
                 className={cn(
                   "group relative flex shrink-0 items-center border-b-2 transition-colors",
-                  isActive
+                  activeView === "diff"
                     ? "border-foreground text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
               >
-                {isRenaming ? (
-                  <input
-                    ref={renameInputRef}
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onBlur={() => void handleFinishRename()}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        void handleFinishRename();
-                      }
-                      if (e.key === "Escape") {
-                        setRenamingChatId(null);
-                      }
-                    }}
-                    className="mx-1 my-1.5 max-w-[140px] rounded border border-border bg-background px-2 py-0.5 text-sm font-medium outline-none focus:ring-1 focus:ring-ring"
-                    autoFocus
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (chat.id !== activeChatId) {
-                        switchChat(chat.id);
-                      }
-                      setActiveView("chat");
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
-                  >
-                    <span className="max-w-[120px] truncate">
-                      {chat.title || "New Chat"}
-                    </span>
-                    {chat.hasUnread && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                    )}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveView("diff")}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
+                >
+                  <GitCompare className="h-3.5 w-3.5" />
+                  <span>Changes</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseChanges}
+                  className="mr-1 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : null;
 
-                {/* Hover actions: rename + close */}
-                {!isRenaming && (
-                  <div className="flex items-center gap-0.5 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
+            const elements: React.ReactNode[] = [];
+
+            chats.forEach((chat, index) => {
+              // Insert Changes tab at the recorded position
+              if (insertAt === index) {
+                elements.push(changesTabEl);
+              }
+
+              const isActive =
+                chat.id === activeChatId && activeView === "chat";
+              const isRenaming = renamingChatId === chat.id;
+
+              elements.push(
+                <div
+                  key={chat.id}
+                  className={cn(
+                    "group relative flex shrink-0 items-center border-b-2 transition-colors",
+                    isActive
+                      ? "border-foreground text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {isRenaming ? (
+                    <input
+                      ref={renameInputRef}
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={() => void handleFinishRename()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          void handleFinishRename();
+                        }
+                        if (e.key === "Escape") {
+                          setRenamingChatId(null);
+                        }
+                      }}
+                      className="mx-1 my-1.5 max-w-[140px] rounded border border-border bg-background px-2 py-0.5 text-sm font-medium outline-none focus:ring-1 focus:ring-ring"
+                      autoFocus
+                    />
+                  ) : (
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStartRename(chat.id, chat.title || "");
+                      onClick={() => {
+                        if (chat.id !== activeChatId) {
+                          switchChat(chat.id);
+                        }
+                        setActiveView("chat");
                       }}
-                      className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-                      aria-label="Rename chat"
+                      className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
                     >
-                      <Pencil className="h-3 w-3" />
+                      <span className="max-w-[120px] truncate">
+                        {chat.title || "New Chat"}
+                      </span>
+                      {chat.hasUnread && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      )}
                     </button>
-                    {canDelete && (
+                  )}
+
+                  {/* Hover actions: rename + close */}
+                  {!isRenaming && (
+                    <div className="flex items-center gap-0.5 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setDeletingChatId(chat.id);
+                          handleStartRename(chat.id, chat.title || "");
                         }}
                         className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-                        aria-label="Close chat"
+                        aria-label="Rename chat"
                       >
-                        <X className="h-3 w-3" />
+                        <Pencil className="h-3 w-3" />
                       </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingChatId(chat.id);
+                          }}
+                          className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                          aria-label="Close chat"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>,
+              );
+            });
 
-          {/* Changes tab — appended at the end of the tab stack */}
-          {!changesTabDismissed && focusedDiffFile && (
-            <div
-              className={cn(
-                "group relative flex shrink-0 items-center border-b-2 transition-colors",
-                activeView === "diff"
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => setActiveView("diff")}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
-              >
-                <GitCompare className="h-3.5 w-3.5" />
-                <span>Changes</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleCloseChanges}
-                className="mr-1 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
+            // If Changes tab index is at or past the end, append after all chats
+            if (insertAt !== null && insertAt >= chats.length) {
+              elements.push(changesTabEl);
+            }
+
+            return elements;
+          })()}
 
           {/* New chat button — always last */}
           <Tooltip>
