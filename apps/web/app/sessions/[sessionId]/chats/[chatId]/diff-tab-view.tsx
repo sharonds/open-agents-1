@@ -261,7 +261,7 @@ export function DiffTabView() {
           !diffError &&
           file &&
           (() => {
-            const isLocalScope = diffScope === "local";
+            const isLocalScope = diffScope === "uncommitted";
             const hasLocalChanges =
               file.stagingStatus === "unstaged" ||
               file.stagingStatus === "partial";

@@ -13,7 +13,7 @@ import {
 
 export type GitPanelTab = "code" | "diff" | "pr";
 export type ActiveView = "chat" | "diff";
-export type DiffScope = "local" | "branch";
+export type DiffScope = "uncommitted" | "branch";
 
 type GitPanelContextValue = {
   /** Whether the right git panel is open */
@@ -62,7 +62,7 @@ export function GitPanelProvider({ children }: { children: ReactNode }) {
   const [activeView, setActiveView] = useState<ActiveView>("chat");
   const [focusedDiffFile, setFocusedDiffFile] = useState<string | null>(null);
   const [changesTabDismissed, setChangesTabDismissed] = useState(false);
-  const [diffScope, setDiffScope] = useState<DiffScope>("local");
+  const [diffScope, setDiffScope] = useState<DiffScope>("uncommitted");
   const [shareRequested, setShareRequested] = useState(false);
   const panelPortalRef = useRef<HTMLDivElement | null>(null);
 

@@ -1327,15 +1327,15 @@ export function GitPanel(props: GitPanelProps) {
               <div className="mb-2 flex items-center gap-1 px-1">
                 <button
                   type="button"
-                  onClick={() => setDiffScope("local")}
+                  onClick={() => setDiffScope("uncommitted")}
                   className={cn(
                     "rounded px-2 py-0.5 text-[10px] font-medium transition-colors",
-                    diffScope === "local"
+                    diffScope === "uncommitted"
                       ? "bg-secondary text-secondary-foreground"
                       : "text-muted-foreground hover:bg-muted/50",
                   )}
                 >
-                  Local
+                  Uncommitted
                 </button>
                 <button
                   type="button"

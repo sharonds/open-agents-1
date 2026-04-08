@@ -195,20 +195,6 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
             );
           })}
 
-          {/* New chat button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={handleNewChat}
-                className="ml-1 flex shrink-0 items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">New chat</TooltipContent>
-          </Tooltip>
-
           {/* Changes tab — appended at the end of the tab stack */}
           {!changesTabDismissed && focusedDiffFile && (
             <div
@@ -236,6 +222,20 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
               </button>
             </div>
           )}
+
+          {/* New chat button — always last */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleNewChat}
+                className="ml-1 flex shrink-0 items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">New chat</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
