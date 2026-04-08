@@ -40,10 +40,18 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
   const [renameValue, setRenameValue] = useState("");
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleNewChat = () => {
     const { chat } = createChat();
     switchChat(chat.id);
+    // Scroll to the rightmost tab after the new chat is added
+    requestAnimationFrame(() => {
+      scrollContainerRef.current?.scrollTo({
+        left: scrollContainerRef.current.scrollWidth,
+        behavior: "smooth",
+      });
+    });
   };
 
   const handleCloseChanges = (e: React.MouseEvent) => {
@@ -98,7 +106,10 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
   return (
     <>
       <div className="flex items-center gap-0 border-b border-border bg-muted/30 px-1">
-        <div className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          ref={scrollContainerRef}
+          className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {chats.map((chat) => {
             const isActive = chat.id === activeChatId && activeView === "chat";
             const isRenaming = renamingChatId === chat.id;
@@ -185,27 +196,31 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
 
           {/* Changes tab — persists until explicitly closed */}
           {!changesTabDismissed && focusedDiffFile && (
-            <button
-              type="button"
-              onClick={() => setActiveView("diff")}
+            <div
               className={cn(
-                "group relative flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                "group relative flex shrink-0 items-center border-b-2 transition-colors",
                 activeView === "diff"
                   ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
-              <GitCompare className="h-3.5 w-3.5" />
-              <span>Changes</span>
+              <button
+                type="button"
+                onClick={() => setActiveView("diff")}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
+              >
+                <GitCompare className="h-3.5 w-3.5" />
+                <span>Changes</span>
+              </button>
               {/* Close button */}
               <button
                 type="button"
                 onClick={handleCloseChanges}
-                className="ml-0.5 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                className="mr-1 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
               >
                 <X className="h-3 w-3" />
               </button>
-            </button>
+            </div>
           )}
 
           {/* New chat button */}
