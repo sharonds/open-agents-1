@@ -1227,7 +1227,7 @@ export function GitPanel(props: GitPanelProps) {
       </div>
 
       {/* Tab bar — matches chat tabs sub-header height */}
-      <div className="flex items-center gap-0.5 border-b border-border bg-muted/30 px-2 py-2">
+      <div className="flex items-center gap-0.5 border-b border-border bg-muted/30 px-2 py-[7px]">
         {(
           [
             "code" as const,

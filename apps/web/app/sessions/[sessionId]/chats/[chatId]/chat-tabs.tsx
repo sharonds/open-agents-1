@@ -93,7 +93,7 @@ export function ChatTabs({
   return (
     <>
       <div className="flex items-center gap-0 border-b border-border bg-muted/30 px-1">
-        <div className="flex min-w-0 flex-1 items-center overflow-x-auto">
+        <div className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {chats.map((chat) => {
             const isActive =
               chat.id === activeChatId && activeView === "chat";

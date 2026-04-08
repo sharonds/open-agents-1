@@ -42,7 +42,7 @@ export function SessionHeader() {
                 <PanelLeft className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Toggle sidebar</TooltipContent>
+            <TooltipContent side="bottom">Toggle left sidebar</TooltipContent>
           </Tooltip>
 
           <div className="flex min-w-0 items-center gap-1.5 text-sm">
@@ -111,7 +111,7 @@ export function SessionHeader() {
                 <PanelRight className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Toggle git panel</TooltipContent>
+            <TooltipContent side="bottom">Toggle right sidebar</TooltipContent>
           </Tooltip>
         </div>
       </div>
