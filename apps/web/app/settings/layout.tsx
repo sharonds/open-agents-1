@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   Trophy,
   User,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -57,6 +58,28 @@ function ProfilePageSkeleton() {
   );
 }
 
+function AutomationsSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-36" />
+        <Skeleton className="h-9 w-36" />
+      </div>
+      <div className="divide-y divide-border/60 rounded-lg border border-border/70">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3 px-3 py-3">
+            <Skeleton className="h-2 w-2 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ConnectionsPageSkeleton() {
   return <AccountsSectionSkeleton />;
 }
@@ -79,6 +102,12 @@ const sidebarItems = [
     label: "Preferences",
     href: "/settings/preferences",
     icon: SettingsIcon,
+  },
+  {
+    id: "automations",
+    label: "Automations",
+    href: "/settings/automations",
+    icon: Zap,
   },
   {
     id: "model-variants",
@@ -110,12 +139,15 @@ function SettingsLayout({
   pathname: string;
 }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const activeItem = sidebarItems.find((item) => item.href === pathname);
+  const activeItem = sidebarItems.find(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+  );
 
   const navItems = (
     <ul className="space-y-1">
       {sidebarItems.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive =
+          pathname === item.href || pathname.startsWith(item.href + "/");
         return (
           <li key={item.id}>
             <Link
@@ -226,10 +258,14 @@ function SettingsLayout({
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const activeItem = sidebarItems.find((item) => item.href === pathname);
+  const activeItem = sidebarItems.find(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+  );
   const fallbackTitle = activeItem?.label ?? "Profile";
   const fallbackContent =
-    activeItem?.id === "connections" ? (
+    activeItem?.id === "automations" ? (
+      <AutomationsSkeleton />
+    ) : activeItem?.id === "connections" ? (
       <ConnectionsPageSkeleton />
     ) : activeItem?.id === "preferences" ? (
       <PreferencesSectionSkeleton />

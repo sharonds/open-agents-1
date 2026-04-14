@@ -3,6 +3,20 @@ import { withBotId } from "botid/next/config";
 import { withWorkflow } from "workflow/next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/automations",
+        destination: "/settings/automations",
+        permanent: true,
+      },
+      {
+        source: "/automations/:id",
+        destination: "/settings/automations/:id",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

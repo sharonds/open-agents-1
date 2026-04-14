@@ -180,7 +180,7 @@ export function SessionHeader() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href={`/automations/${session.automationId}`}
+                    href={`/settings/automations/${session.automationId}`}
                     className="ml-1 inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
                   >
                     Automation
