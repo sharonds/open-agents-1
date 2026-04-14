@@ -1,4 +1,6 @@
+import { checkBotId } from "botid/server";
 import { createUIMessageStreamResponse, type InferUIMessageChunk } from "ai";
+import { botIdConfig } from "@/lib/botid";
 import { start } from "workflow/api";
 import type { WebAgentUIMessage } from "@/app/types";
 import {
@@ -57,6 +59,11 @@ export async function POST(req: Request) {
   }
   const userId = authResult.userId;
   const session = await getServerSession();
+
+  const botVerification = await checkBotId(botIdConfig);
+  if (botVerification.isBot) {
+    return Response.json({ error: "Access denied" }, { status: 403 });
+  }
 
   const parsedBody = await parseChatRequestBody(req);
   if (!parsedBody.ok) {
