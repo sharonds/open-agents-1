@@ -25,7 +25,12 @@ function Spotlight({
 }) {
   return (
     <div className="grid items-center md:grid-cols-2">
-      <div className={cn("px-6 py-16 sm:px-10 md:py-20 lg:py-24", flip ? "order-1 md:order-2" : "order-1 md:order-1")}>
+      <div
+        className={cn(
+          "px-6 py-16 sm:px-10 md:py-20 lg:py-24",
+          flip ? "order-1 md:order-2" : "order-1 md:order-1",
+        )}
+      >
         <h2 className="text-balance text-2xl font-semibold tracking-tighter sm:text-3xl md:text-4xl">
           {title}
         </h2>
@@ -34,7 +39,10 @@ function Spotlight({
         </p>
         <ul className="mt-4 space-y-3 sm:mt-5">
           {bullets.map((b) => (
-            <li key={b} className="flex items-center gap-3 text-(--l-fg-2) sm:text-lg">
+            <li
+              key={b}
+              className="flex items-center gap-3 text-(--l-fg-2) sm:text-lg"
+            >
               <span className="h-1.5 w-1.5 bg-(--l-fg-2)" />
               {b}
             </li>
@@ -42,7 +50,9 @@ function Spotlight({
         </ul>
       </div>
 
-      <div className={flip ? "order-2 md:order-1 -mr-px" : "order-2 md:order-2"}>
+      <div
+        className={flip ? "order-2 md:order-1 -mr-px" : "order-2 md:order-2"}
+      >
         <Stage tone={tone}>
           <div className="mx-auto w-full max-w-[1160px]">
             <Window>{windowContent}</Window>
@@ -57,7 +67,10 @@ export function LandingFeatures() {
   return (
     <section>
       <div className="relative mx-auto max-w-[1320px] overflow-hidden">
-        <div className="absolute left-1/2 top-0 hidden h-full w-px md:block" style={{ backgroundColor: "var(--l-border)" }} />
+        <div
+          className="absolute left-1/2 top-0 hidden h-full w-px md:block"
+          style={{ backgroundColor: "var(--l-border)" }}
+        />
         <div>
           <Spotlight
             tone="slate"

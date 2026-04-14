@@ -289,7 +289,6 @@
   --l-nav-bg: rgb(10, 10, 10);
 }
 
-
 .grain::before {
   content: "";
   position: absolute;
