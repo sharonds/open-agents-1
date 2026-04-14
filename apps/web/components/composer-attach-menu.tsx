@@ -135,27 +135,23 @@ export function ComposerAttachMenu({
               <span>Upload from computer</span>
             </button>
 
-            {hasMcpConnections && (
-              <>
-                <div className="border-t border-border" />
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                  onClick={() => setView("mcp")}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Plug className="size-4 text-muted-foreground" />
-                    <span>MCPs</span>
-                    {enabledCount > 0 && (
-                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
-                        {enabledCount}
-                      </span>
-                    )}
-                  </div>
-                  <ChevronRight className="size-3.5 text-muted-foreground" />
-                </button>
-              </>
-            )}
+            <div className="border-t border-border" />
+            <button
+              type="button"
+              className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+              onClick={() => setView("mcp")}
+            >
+              <div className="flex items-center gap-2.5">
+                <Plug className="size-4 text-muted-foreground" />
+                <span>MCPs</span>
+                {enabledCount > 0 && (
+                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
+                    {enabledCount}
+                  </span>
+                )}
+              </div>
+              <ChevronRight className="size-3.5 text-muted-foreground" />
+            </button>
           </div>
         ) : (
           /* ── MCP submenu ── */
@@ -171,34 +167,40 @@ export function ComposerAttachMenu({
               </span>
             </button>
 
-            <div className="max-h-48 overflow-y-auto py-1">
-              {activeConnections?.map((conn) => (
-                <button
-                  type="button"
-                  key={conn.id}
-                  className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 hover:bg-muted/50"
-                  onClick={() =>
-                    void handleToggle(conn.id, !enabledIds.includes(conn.id))
-                  }
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <McpProviderIcon
-                      provider={conn.provider ?? "custom"}
-                      className="size-4"
-                    />
-                    <span className="text-sm truncate">{conn.name}</span>
-                  </div>
-                  <Switch
-                    checked={enabledIds.includes(conn.id)}
-                    onCheckedChange={(checked) =>
-                      void handleToggle(conn.id, checked)
+            {hasMcpConnections ? (
+              <div className="max-h-48 overflow-y-auto py-1">
+                {activeConnections?.map((conn) => (
+                  <button
+                    type="button"
+                    key={conn.id}
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 hover:bg-muted/50"
+                    onClick={() =>
+                      void handleToggle(conn.id, !enabledIds.includes(conn.id))
                     }
-                    disabled={saving}
-                    className="scale-75"
-                  />
-                </button>
-              ))}
-            </div>
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <McpProviderIcon
+                        provider={conn.provider ?? "custom"}
+                        className="size-4"
+                      />
+                      <span className="text-sm truncate">{conn.name}</span>
+                    </div>
+                    <Switch
+                      checked={enabledIds.includes(conn.id)}
+                      onCheckedChange={(checked) =>
+                        void handleToggle(conn.id, checked)
+                      }
+                      disabled={saving}
+                      className="scale-75"
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="px-3 py-3 text-center text-xs text-muted-foreground">
+                No MCPs configured
+              </div>
+            )}
 
             <div className="border-t border-border px-3 py-2">
               <Link
@@ -207,7 +209,7 @@ export function ComposerAttachMenu({
                 onClick={() => setOpen(false)}
               >
                 <Settings2 className="size-3" />
-                Manage MCPs
+                {hasMcpConnections ? "Manage MCPs" : "Set up MCPs"}
               </Link>
             </div>
           </div>
