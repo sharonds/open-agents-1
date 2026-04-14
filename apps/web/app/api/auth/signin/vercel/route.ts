@@ -45,11 +45,15 @@ export async function GET(req: NextRequest): Promise<Response> {
     sameSite: "lax",
   });
 
+  // TODO: fix and remove later after testing
+  const forceConsent = true;
+
   const url = getVercelAuthorizationUrl({
     clientId,
     redirectUri,
     state,
     codeChallenge,
+    forceConsent,
   });
 
   return Response.redirect(url);
