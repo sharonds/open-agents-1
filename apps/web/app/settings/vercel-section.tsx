@@ -44,12 +44,20 @@ function formatCredits(balance: string): string | null {
     return null;
   }
 
-  return `$${num.toFixed(2)}`;
+  // Negative balance indicates flexible/unlimited billing
+  if (num < 0) {
+    return "Flexible Billing";
+  }
+
+  return num.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function CreditsBadge({ teamId }: { teamId: string }) {
   const { data, isLoading } = useSWR<CreditsResponse>(
-    teamId ? "/api/vercel/credits" : null,
+    teamId ? `/api/vercel/credits?t=${teamId}` : null,
     fetcher,
   );
 
