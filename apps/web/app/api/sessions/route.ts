@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/vercel-project-links";
 import { getUserMCPConnections } from "@/lib/db/mcp-connections";
 import { getUserPreferences } from "@/lib/db/user-preferences";
+import { sanitizeUserPreferencesForSession } from "@/lib/model-access";
 import {
   isValidGitHubRepoName,
   isValidGitHubRepoOwner,
@@ -314,17 +315,21 @@ export async function POST(req: Request) {
       }
     }
 
-    const [title, preferences, mcpConnections] = await Promise.all([
+    const [title, rawPreferences, mcpConnections] = await Promise.all([
       titlePromise,
       preferencesPromise,
       getUserMCPConnections(session.user.id).catch(() => []),
     ]);
+    const preferences = sanitizeUserPreferencesForSession(
+      rawPreferences,
+      session,
+      req.url,
+    );
 
     // Auto-populate enabled MCP connections from user's defaults
     const enabledMcpConnectionIds = mcpConnections
       .filter((c) => c.enabledByDefault && c.status === "active")
       .map((c) => c.id);
-
     const effectiveAutoCommitPush =
       autoCommitPush ?? preferences.autoCommitPush;
     const effectiveAutoCreatePr = autoCreatePr ?? preferences.autoCreatePr;
