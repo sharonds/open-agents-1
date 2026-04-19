@@ -95,11 +95,11 @@ export function useAudioRecording() {
       recognition.onresult = (event) => {
         let nextTranscript = speechTranscriptRef.current;
         for (
-          let currentResultIndex = event.resultIndex;
-          currentResultIndex < event.results.length;
-          currentResultIndex++
+          let resultIndex = event.resultIndex;
+          resultIndex < event.results.length;
+          resultIndex++
         ) {
-          const result = event.results[currentResultIndex];
+          const result = event.results[resultIndex];
           if (!result?.isFinal) {
             continue;
           }
@@ -149,14 +149,15 @@ export function useAudioRecording() {
         const stopResolve = speechStopResolveRef.current;
         speechStopResolveRef.current = null;
         const didFail = speechRecognitionHadErrorRef.current;
-        speechRecognitionHadErrorRef.current = false;
         resetBrowserTranscription();
 
         if (didFail) {
+          speechRecognitionHadErrorRef.current = false;
           return;
         }
 
         const nextTranscript = speechTranscriptRef.current.trim();
+        speechRecognitionHadErrorRef.current = false;
         if (nextTranscript) {
           setTranscript(nextTranscript);
         }
