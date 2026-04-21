@@ -1,7 +1,14 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { FileText, GitCompare, Pencil, Plus, X } from "lucide-react";
+import {
+  AlertCircle,
+  FileText,
+  GitCompare,
+  Pencil,
+  Plus,
+  X,
+} from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -50,6 +57,10 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
     setFocusedFilePath,
     fileTabDismissed,
     setFileTabDismissed,
+    focusedConflictFile,
+    setFocusedConflictFile,
+    conflictsTabDismissed,
+    setConflictsTabDismissed,
   } = useGitPanel();
 
   const isMobile = useIsMobile();
@@ -124,6 +135,31 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
     focusedDiffFile,
   ]);
 
+  const [conflictsTabIndex, setConflictsTabIndex] = useState<number | null>(
+    null,
+  );
+  useEffect(() => {
+    const isConflictsVisible = !conflictsTabDismissed && !!focusedConflictFile;
+    if (isConflictsVisible && conflictsTabIndex === null) {
+      setConflictsTabIndex(
+        chats.length +
+          (!changesTabDismissed && !!focusedDiffFile ? 1 : 0) +
+          (!fileTabDismissed && !!focusedFilePath ? 1 : 0),
+      );
+    } else if (!isConflictsVisible) {
+      setConflictsTabIndex(null);
+    }
+  }, [
+    focusedConflictFile,
+    conflictsTabDismissed,
+    chats.length,
+    conflictsTabIndex,
+    changesTabDismissed,
+    focusedDiffFile,
+    fileTabDismissed,
+    focusedFilePath,
+  ]);
+
   const handleNewChat = () => {
     const { chat } = createChat();
     switchChat(chat.id);
@@ -154,6 +190,16 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
       setFileTabDismissed(true);
     },
     [setActiveView, setFocusedFilePath, setFileTabDismissed],
+  );
+
+  const handleCloseConflicts = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setActiveView("chat");
+      setFocusedConflictFile(null);
+      setConflictsTabDismissed(true);
+    },
+    [setActiveView, setFocusedConflictFile, setConflictsTabDismissed],
   );
 
   const handleStartRename = useCallback(
@@ -203,6 +249,11 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
   const showFileTab = !fileTabDismissed && !!focusedFilePath;
   const fileInsertAt = showFileTab
     ? (fileTabIndex ?? chats.length + (showChangesTab ? 1 : 0))
+    : null;
+  const showConflictsTab = !conflictsTabDismissed && !!focusedConflictFile;
+  const conflictsInsertAt = showConflictsTab
+    ? (conflictsTabIndex ??
+      chats.length + (showChangesTab ? 1 : 0) + (showFileTab ? 1 : 0))
     : null;
   const fileTabFileName =
     focusedFilePath?.split("/").pop() ?? focusedFilePath ?? "";
@@ -270,6 +321,37 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
       </div>
     ) : null;
 
+    const conflictsTabEl = showConflictsTab ? (
+      <div
+        key="__conflicts__"
+        className={cn(
+          "group relative flex shrink-0 items-center border-b-2 transition-colors",
+          activeView === "conflicts"
+            ? "border-amber-500 text-foreground"
+            : "border-transparent text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveView("conflicts")}
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
+        >
+          <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+          <span>Conflicts</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleCloseConflicts}
+          className={cn(
+            "mr-1 rounded p-0.5 text-muted-foreground transition-opacity hover:bg-accent hover:text-foreground",
+            isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+          )}
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    ) : null;
+
     const elements: ReactNode[] = [];
 
     chats.forEach((chat, index) => {
@@ -278,6 +360,9 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
       }
       if (fileInsertAt === index) {
         elements.push(fileTabEl);
+      }
+      if (conflictsInsertAt === index) {
+        elements.push(conflictsTabEl);
       }
 
       const isActive = chat.id === activeChatId && activeView === "chat";
@@ -379,15 +464,21 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
       elements.push(fileTabEl);
     }
 
+    if (conflictsInsertAt !== null && conflictsInsertAt >= chats.length) {
+      elements.push(conflictsTabEl);
+    }
+
     return elements;
   }, [
     activeChatId,
     activeView,
     canDelete,
     chats,
+    conflictsInsertAt,
     fileInsertAt,
     fileTabFileName,
     handleCloseChanges,
+    handleCloseConflicts,
     handleCloseFile,
     handleFinishRename,
     handleStartRename,
@@ -398,6 +489,7 @@ export function ChatTabs({ activeChatId }: ChatTabsProps) {
     renamingChatId,
     setActiveView,
     showChangesTab,
+    showConflictsTab,
     showFileTab,
     switchChat,
   ]);

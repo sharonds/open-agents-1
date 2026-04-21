@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertCircle,
   AlertTriangle,
   Check,
   ChevronDown,
@@ -70,6 +71,7 @@ import {
 } from "@/lib/git-flow-client";
 import type { SessionGitStatus } from "@/hooks/use-session-git-status";
 import { useSessionFiles } from "@/hooks/use-session-files";
+import type { ConflictFile } from "@/hooks/use-session-conflicts";
 import { useGitPanel } from "./git-panel-context";
 import { FileTree } from "./file-tree";
 import { useSessionChatWorkspaceContext } from "./session-chat-context";
@@ -148,6 +150,11 @@ type GitPanelProps = {
     prStatus: "open" | "merged" | "closed";
   }) => void;
   onGitMessage?: (message: WebAgentUIMessage) => Promise<void> | void;
+
+  // Conflicts
+  conflictFiles: ConflictFile[] | null;
+  conflictsLoading: boolean;
+  refreshConflicts: () => void;
 };
 
 /* ------------------------------------------------------------------ */
@@ -267,6 +274,83 @@ function DiffFileList({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Conflict file list for the panel's Conflicts subtab                 */
+/* ------------------------------------------------------------------ */
+
+function ConflictFileList({
+  files,
+  onFixConflicts,
+  fixDisabled,
+  baseBranchRef,
+}: {
+  files: ConflictFile[];
+  onFixConflicts?: (baseBranchRef: string) => void;
+  fixDisabled: boolean;
+  baseBranchRef: string;
+}) {
+  const { openConflictFile } = useGitPanel();
+
+  if (files.length === 0) {
+    return (
+      <div className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/25 py-8 text-center">
+        <p className="text-xs text-muted-foreground">No merge conflicts</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="space-y-px">
+        {files.map((file) => {
+          const fileName = file.path.split("/").pop() ?? file.path;
+          const dirPath = file.path.slice(0, -fileName.length);
+
+          return (
+            <div
+              key={file.path}
+              className="group flex items-center gap-1 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
+            >
+              <button
+                type="button"
+                onClick={() => openConflictFile(file.path)}
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              >
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+                <div className="flex min-w-0 flex-1 items-baseline gap-1.5 overflow-hidden">
+                  <span className="shrink-0 font-mono text-xs font-medium text-foreground">
+                    {fileName}
+                  </span>
+                  {dirPath && (
+                    <span
+                      className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] text-muted-foreground"
+                      dir="rtl"
+                    >
+                      <bdi>{dirPath.replace(/\/$/, "")}</bdi>
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {onFixConflicts && (
+        <Button
+          type="button"
+          size="sm"
+          className="w-full text-xs"
+          disabled={fixDisabled}
+          onClick={() => onFixConflicts(baseBranchRef)}
+        >
+          <Sparkles className="mr-1.5 h-3 w-3" />
+          Fix Conflicts
+        </Button>
+      )}
     </div>
   );
 }
@@ -1673,7 +1757,7 @@ export function GitPanel(props: GitPanelProps) {
     isDeploymentFailed,
     hasUncommittedGitChanges,
     supportsRepoCreation,
-    hasDiff,
+    hasDiff: _hasDiff,
     canCloseAndArchive,
     diffFiles,
     diffSummary,
@@ -1692,6 +1776,9 @@ export function GitPanel(props: GitPanelProps) {
     onPrDetected,
     onGitMessage,
     isAgentWorking,
+    conflictFiles,
+    conflictsLoading,
+    refreshConflicts: _refreshConflicts,
   } = props;
   const { refreshFiles } = useSessionChatWorkspaceContext();
   const [baseBranch, setBaseBranch] = useState("main");
@@ -1770,18 +1857,8 @@ export function GitPanel(props: GitPanelProps) {
     ? buildingDeploymentUrl
     : (prDeploymentUrl ?? (isDeploymentFailed ? failedDeploymentUrl : null));
 
-  const canOpenPrTab =
-    hasExistingPr ||
-    (hasRepo && gitStatus !== null && hasDiff && !hasUncommittedGitChanges);
-  const prTabDisabledReason = canOpenPrTab
-    ? null
-    : !hasRepo
-      ? "Create a repo first"
-      : gitStatus === null
-        ? "Loading git status..."
-        : hasUncommittedGitChanges
-          ? "Commit your changes before creating a pull request."
-          : "Commit changes to your branch before creating a pull request.";
+  const canOpenPrTab = hasRepo;
+  const prTabDisabledReason = canOpenPrTab ? null : "Create a repo first";
   const showCreatePrShortcut = hasRepo && !hasExistingPr && canOpenPrTab;
   const isRefreshingChanges = diffRefreshing || gitStatusLoading;
   const diffScopeManuallySetRef = useRef(false);
@@ -1977,12 +2054,15 @@ export function GitPanel(props: GitPanelProps) {
               )}
 
               {/* Separator */}
-              {hasRepo && diffFiles && diffFiles.length > 0 && (
-                <div className="mb-2 border-t border-border" />
-              )}
+              {hasRepo &&
+                ((diffFiles && diffFiles.length > 0) ||
+                  (conflictFiles && conflictFiles.length > 0)) && (
+                  <div className="mb-2 border-t border-border" />
+                )}
 
               {/* Scope toggle */}
-              {diffFiles && diffFiles.length > 0 && (
+              {((diffFiles && diffFiles.length > 0) ||
+                (conflictFiles && conflictFiles.length > 0)) && (
                 <div className="mb-2 flex items-center justify-between gap-2 px-1">
                   <div className="flex items-center gap-1">
                     <button
@@ -2015,6 +2095,26 @@ export function GitPanel(props: GitPanelProps) {
                     >
                       Uncommitted
                     </button>
+                    {conflictFiles && conflictFiles.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          diffScopeManuallySetRef.current = true;
+                          setDiffScope("conflicts");
+                        }}
+                        className={cn(
+                          "rounded px-2 py-0.5 text-[10px] font-medium transition-colors",
+                          diffScope === "conflicts"
+                            ? "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                            : "text-amber-600 hover:bg-amber-500/10 dark:text-amber-400",
+                        )}
+                      >
+                        Conflicts
+                        <span className="ml-1 font-mono">
+                          {conflictFiles.length}
+                        </span>
+                      </button>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     {hasUncommittedGitChanges ? (
@@ -2069,7 +2169,8 @@ export function GitPanel(props: GitPanelProps) {
               )}
 
               {/* File summary */}
-              {diffFiles &&
+              {diffScope !== "conflicts" &&
+                diffFiles &&
                 diffFiles.length > 0 &&
                 hasDiffChanges &&
                 (() => {
@@ -2110,7 +2211,28 @@ export function GitPanel(props: GitPanelProps) {
 
             {/* Scrollable file list */}
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-              {diffFiles && diffFiles.length > 0 ? (
+              {diffScope === "conflicts" ? (
+                conflictsLoading ? (
+                  <div className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/25 py-8 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      Checking for conflicts…
+                    </p>
+                  </div>
+                ) : conflictFiles && conflictFiles.length > 0 ? (
+                  <ConflictFileList
+                    files={conflictFiles}
+                    onFixConflicts={onFixConflicts}
+                    fixDisabled={isAgentWorking}
+                    baseBranchRef={`origin/${baseBranch}`}
+                  />
+                ) : (
+                  <div className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/25 py-8 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      No merge conflicts
+                    </p>
+                  </div>
+                )
+              ) : diffFiles && diffFiles.length > 0 ? (
                 <DiffFileList
                   files={diffFiles}
                   onDiscardFile={(file) => {

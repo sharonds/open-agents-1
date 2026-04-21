@@ -13,8 +13,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export type GitPanelTab = "diff" | "pr" | "files";
-export type ActiveView = "chat" | "diff" | "file";
-export type DiffScope = "uncommitted" | "branch";
+export type ActiveView = "chat" | "diff" | "file" | "conflicts";
+export type DiffScope = "uncommitted" | "branch" | "conflicts";
 
 type GitPanelContextValue = {
   /** Whether the right git panel is open */
@@ -68,6 +68,18 @@ type GitPanelContextValue = {
   /** Open a file in the main content area (non-diff view) */
   openFileTab: (filePath: string) => void;
 
+  /** Open the conflicts view in the main content area, focused on a file */
+  openConflictFile: (filePath: string) => void;
+
+  /** File path to focus in the conflicts view */
+  focusedConflictFile: string | null;
+  setFocusedConflictFile: (file: string | null) => void;
+  focusedConflictRequestId: number;
+
+  /** Whether the user has explicitly closed the Conflicts tab */
+  conflictsTabDismissed: boolean;
+  setConflictsTabDismissed: (dismissed: boolean) => void;
+
   /** Share dialog trigger (set by per-chat page, called by header) */
   shareRequested: boolean;
   setShareRequested: (requested: boolean) => void;
@@ -97,6 +109,11 @@ export function GitPanelProvider({ children }: { children: ReactNode }) {
   const [hasCommittedChanges, setHasCommittedChanges] = useState(false);
   const [focusedFilePath, setFocusedFilePath] = useState<string | null>(null);
   const [fileTabDismissed, setFileTabDismissed] = useState(false);
+  const [focusedConflictFile, setFocusedConflictFile] = useState<string | null>(
+    null,
+  );
+  const [focusedConflictRequestId, setFocusedConflictRequestId] = useState(0);
+  const [conflictsTabDismissed, setConflictsTabDismissed] = useState(false);
   const [shareRequested, setShareRequested] = useState(false);
   const panelPortalRef = useRef<HTMLDivElement | null>(null);
   const headerActionsRef = useRef<HTMLDivElement | null>(null);
@@ -117,6 +134,17 @@ export function GitPanelProvider({ children }: { children: ReactNode }) {
       setFocusedFilePath(filePath);
       setActiveView("file");
       setFileTabDismissed(false);
+      if (isMobile) setGitPanelOpen(false);
+    },
+    [isMobile],
+  );
+
+  const openConflictFile = useCallback(
+    (filePath: string) => {
+      setFocusedConflictFile(filePath);
+      setFocusedConflictRequestId((prev) => prev + 1);
+      setActiveView("conflicts");
+      setConflictsTabDismissed(false);
       if (isMobile) setGitPanelOpen(false);
     },
     [isMobile],
@@ -149,6 +177,12 @@ export function GitPanelProvider({ children }: { children: ReactNode }) {
       fileTabDismissed,
       setFileTabDismissed,
       openFileTab,
+      openConflictFile,
+      focusedConflictFile,
+      setFocusedConflictFile,
+      focusedConflictRequestId,
+      conflictsTabDismissed,
+      setConflictsTabDismissed,
       shareRequested,
       setShareRequested,
       panelPortalRef,
@@ -165,6 +199,10 @@ export function GitPanelProvider({ children }: { children: ReactNode }) {
       focusedFilePath,
       fileTabDismissed,
       openFileTab,
+      openConflictFile,
+      focusedConflictFile,
+      focusedConflictRequestId,
+      conflictsTabDismissed,
       diffScope,
       hasActionNeeded,
       changesCount,

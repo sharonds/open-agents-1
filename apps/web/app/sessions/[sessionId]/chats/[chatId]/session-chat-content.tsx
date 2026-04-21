@@ -99,6 +99,7 @@ import { useImageAttachments } from "@/hooks/use-image-attachments";
 import { useTextAttachments } from "@/hooks/use-text-attachments";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useSessionChats } from "@/hooks/use-session-chats";
+import { useSessionConflicts } from "@/hooks/use-session-conflicts";
 import { useSlashCommands } from "@/hooks/use-slash-commands";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import {
@@ -173,6 +174,10 @@ const DiffTabView = dynamic(
 );
 const FileTabView = dynamic(
   () => import("./file-tab-view").then((m) => m.FileTabView),
+  { ssr: false },
+);
+const ConflictsTabView = dynamic(
+  () => import("./conflicts-tab-view").then((m) => m.ConflictsTabView),
   { ssr: false },
 );
 const GitPanel = dynamic(() => import("./git-panel").then((m) => m.GitPanel), {
@@ -1219,6 +1224,12 @@ export function SessionChatContent({
     skillsLoading,
     refreshSkills,
   } = useSessionChatWorkspaceContext();
+  const {
+    conflicts: conflictFiles,
+    baseBranch: conflictsBaseBranch,
+    conflictsLoading,
+    refreshConflicts,
+  } = useSessionConflicts(session.id, sandboxInfo !== null);
 
   // Ping the server to refresh the inactivity timer when the user focuses
   // the textarea. Throttled to at most once every 5 minutes so we don't
@@ -3061,6 +3072,9 @@ export function SessionChatContent({
         void refreshGitStatus().catch(() => {});
       }}
       onGitMessage={upsertSyntheticAssistantGitMessage}
+      conflictFiles={conflictFiles}
+      conflictsLoading={conflictsLoading}
+      refreshConflicts={refreshConflicts}
     />
   ) : null;
 
@@ -3272,6 +3286,17 @@ export function SessionChatContent({
             <DiffTabView />
           ) : activeView === "file" ? (
             <FileTabView />
+          ) : activeView === "conflicts" ? (
+            <ConflictsTabView
+              conflicts={conflictFiles}
+              conflictsLoading={conflictsLoading}
+              refreshConflicts={refreshConflicts}
+              onFixConflicts={(baseBranchRef) =>
+                handleFixConflicts(baseBranchRef)
+              }
+              isAgentWorking={hasPendingResponse || isChatInFlight}
+              baseBranchRef={`origin/${conflictsBaseBranch ?? "main"}`}
+            />
           ) : (
             <>
               {/* Transient error banner (e.g. iOS "Load failed" after sleep) */}
