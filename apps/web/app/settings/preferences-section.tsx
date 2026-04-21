@@ -98,6 +98,46 @@ export function PreferencesSectionSkeleton() {
           <Skeleton className="h-16 w-full" />
         </div>
       </div>
+
+      <div className="border-t border-border/50" />
+
+      <div className="space-y-4">
+        <SectionHeader>Skills</SectionHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-[28rem] max-w-full" />
+          </div>
+          <div className="rounded-lg border border-border/70">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 border-b border-border/60 px-3 py-2.5 last:border-b-0"
+              >
+                <div className="grid min-w-0 flex-1 gap-1">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-44" />
+                </div>
+                <Skeleton className="size-8 rounded-md" />
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-2.5 rounded-lg border border-dashed border-border/60 p-3">
+            <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <div className="grid gap-1.5">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="grid gap-1.5">
+                <Skeleton className="h-3.5 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-20" />
+            </div>
+            <Skeleton className="h-4 w-[30rem] max-w-full" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -107,10 +147,41 @@ export function ModelPreferencesSectionSkeleton() {
     <div className="space-y-4">
       <SectionHeader>Model Preferences</SectionHeader>
       <div className="grid gap-6 sm:grid-cols-2">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
+        <div className="grid gap-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="grid gap-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-4 w-44" />
+        </div>
       </div>
-      <Skeleton className="h-24 w-full" />
+      <div className="grid gap-2">
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-14" />
+          </div>
+          <Skeleton className="h-4 w-[34rem] max-w-full" />
+        </div>
+        <div className="rounded-lg border border-border/70">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-3 border-b border-border/60 px-3 py-2 last:border-b-0"
+            >
+              <div className="min-w-0 flex-1 space-y-1">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+              <Skeleton className="size-6 rounded-md" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-10 w-full" />
+      </div>
     </div>
   );
 }
