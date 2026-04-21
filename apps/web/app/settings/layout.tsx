@@ -70,21 +70,21 @@ const sidebarItems = [
     icon: User,
   },
   {
-    id: "connections",
-    label: "Connections",
-    href: "/settings/connections",
-    icon: Cable,
-  },
-  {
     id: "preferences",
     label: "Preferences",
     href: "/settings/preferences",
     icon: SettingsIcon,
   },
   {
-    id: "model-variants",
-    label: "Model Variants",
-    href: "/settings/model-variants",
+    id: "connections",
+    label: "Connections",
+    href: "/settings/connections",
+    icon: Cable,
+  },
+  {
+    id: "models",
+    label: "Models",
+    href: "/settings/models",
     icon: SlidersHorizontal,
   },
   {
@@ -226,7 +226,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <ConnectionsPageSkeleton />
     ) : activeItem?.id === "preferences" ? (
       <PreferencesSectionSkeleton />
-    ) : activeItem?.id === "model-variants" ? (
+    ) : activeItem?.id === "models" ? (
       <ModelVariantsSectionSkeleton />
     ) : activeItem?.id === "leaderboard" ? (
       <LeaderboardSectionSkeleton />
