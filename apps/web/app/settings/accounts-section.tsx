@@ -249,15 +249,15 @@ function OrgRow({ org }: { org: OrgInstallStatus }) {
   if (!isInstalled) {
     return (
       <div className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Avatar className="size-5 rounded-full text-[8px]">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar className="size-6 rounded-full text-[9px]">
             <AvatarImage src={avatarSrc} alt={org.login} />
-            <AvatarFallback className="rounded-full text-[8px]">
+            <AvatarFallback className="rounded-full text-[9px]">
               {org.login.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate text-xs font-medium">{org.login}</span>
+            <span className="truncate text-sm font-medium">{org.login}</span>
             <InstallBadge
               status={org.installStatus}
               repositorySelection={org.repositorySelection}
@@ -303,7 +303,7 @@ function OrgRow({ org }: { org: OrgInstallStatus }) {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-1 font-mono text-[11px] text-muted-foreground/0 transition-all group-hover:text-muted-foreground">
-        <span>configure url</span>
+        <span>Configure</span>
         <ExternalLink className="size-3" />
       </div>
     </Link>
