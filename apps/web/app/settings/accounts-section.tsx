@@ -8,7 +8,6 @@ import {
   Globe,
   ListFilter,
   Loader2,
-  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -199,15 +198,19 @@ export function AccountsSectionSkeleton() {
 function InstallBadge({
   status,
   repositorySelection,
+  className = "size-4",
 }: {
   status: "installed" | "not_installed";
   repositorySelection: "all" | "selected" | null;
+  className?: string;
 }) {
   if (status === "installed" && repositorySelection === "all") {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Globe className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+          <Globe
+            className={`${className} shrink-0 text-green-600 dark:text-green-400`}
+          />
         </TooltipTrigger>
         <TooltipContent>All Repositories</TooltipContent>
       </Tooltip>
@@ -217,7 +220,9 @@ function InstallBadge({
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <ListFilter className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <ListFilter
+            className={`${className} shrink-0 text-amber-600 dark:text-amber-400`}
+          />
         </TooltipTrigger>
         <TooltipContent>Select Repositories</TooltipContent>
       </Tooltip>
@@ -226,7 +231,9 @@ function InstallBadge({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Ban className="size-4 shrink-0 text-red-600 dark:text-red-400" />
+        <Ban
+          className={`${className} shrink-0 text-red-600 dark:text-red-400`}
+        />
       </TooltipTrigger>
       <TooltipContent>No Repository Access</TooltipContent>
     </Tooltip>
@@ -239,47 +246,67 @@ function OrgRow({ org }: { org: OrgInstallStatus }) {
     org.avatarUrl ||
     `https://avatars.githubusercontent.com/${org.login}?s=40&v=4`;
 
+  if (!isInstalled) {
+    return (
+      <div className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Avatar className="size-5 rounded-full text-[8px]">
+            <AvatarImage src={avatarSrc} alt={org.login} />
+            <AvatarFallback className="rounded-full text-[8px]">
+              {org.login.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-xs font-medium">{org.login}</span>
+            <InstallBadge
+              status={org.installStatus}
+              repositorySelection={org.repositorySelection}
+              className="size-3"
+            />
+          </div>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-[11px]"
+          onClick={() => startGitHubInstallForOrg(org.githubId)}
+        >
+          Install
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center justify-between gap-2 py-1.5 first:pt-0 last:pb-0">
-      <div className="flex min-w-0 items-center gap-2">
+    <Link
+      href={org.installationUrl ?? "#"}
+      target="_blank"
+      rel="noreferrer"
+      className="group flex w-full items-center gap-3 rounded-md -mx-2 px-2 py-2 first:mt-0 last:mb-0 transition-colors hover:bg-muted/40"
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
         <Avatar className="size-5 rounded-full text-[8px]">
           <AvatarImage src={avatarSrc} alt={org.login} />
           <AvatarFallback className="rounded-full text-[8px]">
             {org.login.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <span className="truncate text-xs font-medium">{org.login}</span>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-xs font-medium">{org.login}</span>
+          <InstallBadge
+            status={org.installStatus}
+            repositorySelection={org.repositorySelection}
+            className="size-3"
+          />
+        </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5">
-        <InstallBadge
-          status={org.installStatus}
-          repositorySelection={org.repositorySelection}
-        />
-        {isInstalled && org.installationUrl ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[11px]"
-            asChild
-          >
-            <Link href={org.installationUrl} target="_blank" rel="noreferrer">
-              Configure
-              <ExternalLink className="ml-1 size-2.5" />
-            </Link>
-          </Button>
-        ) : !isInstalled ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[11px]"
-            onClick={() => startGitHubInstallForOrg(org.githubId)}
-          >
-            Install
-          </Button>
-        ) : null}
+      <div className="ml-auto flex shrink-0 items-center gap-1 font-mono text-[11px] text-muted-foreground/0 transition-all group-hover:text-muted-foreground">
+        <span>configure url</span>
+        <ExternalLink className="size-3" />
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -344,10 +371,7 @@ function ConnectionStatusButton({
           </DropdownMenuItem>
         ) : null}
         {!isConnected && (
-          <DropdownMenuItem onClick={onReconnect}>
-            <RefreshCw className="size-4" />
-            Reconnect
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onReconnect}>Reconnect</DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -367,12 +391,10 @@ export function AccountsSection() {
   const { hasGitHubAccount, hasGitHub, loading } = useSession();
   const { mutate } = useSWRConfig();
   const [unlinking, setUnlinking] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const {
     reconnectRequired,
     reason: _reason,
-    isLoading: connectionStatusLoading,
     refresh: refreshConnectionStatus,
   } = useGitHubConnectionStatus({ enabled: hasGitHub });
 
@@ -391,12 +413,7 @@ export function AccountsSection() {
   const tokenExpired = connectionData?.tokenExpired ?? false;
 
   const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      await Promise.all([mutateConnection(), refreshConnectionStatus()]);
-    } finally {
-      setIsRefreshing(false);
-    }
+    await Promise.all([mutateConnection(), refreshConnectionStatus()]);
   }, [mutateConnection, refreshConnectionStatus]);
 
   async function handleUnlink() {
@@ -422,48 +439,15 @@ export function AccountsSection() {
     return <AccountsSectionSkeleton />;
   }
 
-  // Determine overall connection status for the header button
   const requiresReconnect = hasGitHub && (reconnectRequired || tokenExpired);
-  const connectionStatus: "connected" | "reconnect" | "not_connected" =
-    !hasGitHub
-      ? "not_connected"
-      : requiresReconnect
-        ? "reconnect"
-        : "connected";
 
   return (
     <div className="rounded-lg border border-border/50 bg-muted/10">
       {/* Header */}
       <div className="border-b border-border/50 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <GitHubIcon className="h-5 w-5" />
-            <span className="text-sm font-medium">GitHub</span>
-          </div>
-          <div className="flex items-center gap-1">
-            {hasGitHub && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={
-                  isRefreshing || connectionLoading || connectionStatusLoading
-                }
-                className="h-7 w-7 p-0"
-              >
-                <RefreshCw
-                  className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-              </Button>
-            )}
-            <ConnectionStatusButton
-              status={connectionStatus}
-              configureUrl={connectionData?.personalInstallationUrl}
-              onReconnect={startGitHubReconnectFromSettings}
-              onDisconnect={() => setDisconnectOpen(true)}
-              unlinking={unlinking}
-            />
-          </div>
+        <div className="flex items-center gap-2.5">
+          <GitHubIcon className="h-5 w-5" />
+          <span className="text-sm font-medium">GitHub</span>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Open Agents uses a GitHub App to access your repositories
@@ -482,6 +466,8 @@ export function AccountsSection() {
           <ConnectedState
             data={connectionData}
             reconnectRequired={requiresReconnect}
+            onDisconnect={() => setDisconnectOpen(true)}
+            unlinking={unlinking}
           />
         ) : (
           <NotConnectedState />
@@ -574,9 +560,13 @@ function ConnectionLoadingSkeleton() {
 function ConnectedState({
   data,
   reconnectRequired,
+  onDisconnect,
+  unlinking,
 }: {
   data: ConnectionStatusResponse;
   reconnectRequired: boolean;
+  onDisconnect: () => void;
+  unlinking: boolean;
 }) {
   const [orgsExpanded, setOrgsExpanded] = useState(false);
   const installedOrgCount = data.orgs.filter(
@@ -595,7 +585,14 @@ function ConnectedState({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{data.user.login}</p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-medium">{data.user.login}</p>
+              <InstallBadge
+                status={data.personalInstallStatus}
+                repositorySelection={data.personalRepositorySelection}
+                className="size-3"
+              />
+            </div>
             {reconnectRequired ? (
               <p className="text-xs">
                 <span className="inline-flex items-center gap-1 text-amber-500">
@@ -607,12 +604,13 @@ function ConnectedState({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
-          <InstallBadge
-            status={data.personalInstallStatus}
-            repositorySelection={data.personalRepositorySelection}
-          />
-        </div>
+        <ConnectionStatusButton
+          status={reconnectRequired ? "reconnect" : "connected"}
+          configureUrl={data.personalInstallationUrl}
+          onReconnect={startGitHubReconnectFromSettings}
+          onDisconnect={onDisconnect}
+          unlinking={unlinking}
+        />
       </div>
 
       {/* Reconnect banner */}
