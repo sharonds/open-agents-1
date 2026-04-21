@@ -360,13 +360,11 @@ function ConnectionStatusButton({
         {isConnected && configureUrl ? (
           <DropdownMenuItem asChild>
             <Link href={configureUrl} target="_blank" rel="noreferrer">
-              <ExternalLink className="size-4" />
               Configure
             </Link>
           </DropdownMenuItem>
         ) : isConnected ? (
           <DropdownMenuItem onClick={startGitHubInstallFromSettings}>
-            <ExternalLink className="size-4" />
             Configure
           </DropdownMenuItem>
         ) : null}
