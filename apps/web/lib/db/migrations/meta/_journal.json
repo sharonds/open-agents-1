@@ -232,6 +232,13 @@
       "when": 1776696625627,
       "tag": "0032_funny_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1776800000000,
+      "tag": "0033_add_is_admin",
+      "breakpoints": true
     }
   ]
 }
