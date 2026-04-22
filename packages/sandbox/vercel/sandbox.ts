@@ -545,22 +545,11 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
         source: { type: "snapshot", snapshotId: baseSnapshotId },
       });
     } else if (source) {
-      sdk = await VercelSandboxSDK.create({
-        ...createBaseConfig,
-        source: source.token
-          ? {
-              type: "git",
-              url: source.url,
-              username: "x-access-token",
-              password: source.token,
-              ...(source.branch && { revision: source.branch }),
-            }
-          : {
-              type: "git",
-              url: source.url,
-              ...(source.branch && { revision: source.branch }),
-            },
-      });
+      // When source is provided without a baseSnapshotId, create an empty
+      // sandbox first and clone explicitly below. The SDK's built-in
+      // `source: { type: "git" }` mode leaves the working tree uncheckedout
+      // and doesn't set up `origin`, which breaks the agent's push flow.
+      sdk = await VercelSandboxSDK.create(createBaseConfig);
     } else {
       sdk = await VercelSandboxSDK.create(createBaseConfig);
     }
@@ -571,7 +560,10 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
     // snapshot has files in /vercel/sandbox (dotfiles, tool configs, etc.), the
     // clone will fail. Consider using git init + remote add + fetch + checkout
     // instead, which works regardless of existing directory contents.
-    if (source && baseSnapshotId) {
+    // Clone explicitly whenever `source` is provided. Previously this only ran
+    // when both source AND baseSnapshotId were set, which meant the
+    // "source but no baseSnapshotId" path relied on the SDK's broken git mode.
+    if (source) {
       const cloneUrl = source.token
         ? (buildAuthenticatedGitHubUrl(source.url, source.token) ?? source.url)
         : source.url;
