@@ -115,22 +115,22 @@ export const auth = betterAuth({
       clientSecret: process.env.VERCEL_APP_CLIENT_SECRET ?? "",
       scope: ["openid", "email", "profile", "offline_access"],
       overrideUserInfoOnSignIn: true,
-      mapProfileToUser: (profile: Record<string, unknown>) => ({
+      // biome-ignore lint/suspicious/noExplicitAny: profile shape from better-auth varies by provider
+      mapProfileToUser: (profile: any) => ({
         username:
-          (profile.preferred_username as string) ??
-          (profile.name as string) ??
-          (profile.email as string) ??
+          profile.preferred_username ??
+          profile.name ??
+          profile.email ??
           `user-${Date.now()}`,
       }),
     },
     github: {
       clientId: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID ?? "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
-      mapProfileToUser: (profile: Record<string, unknown>) => ({
+      // biome-ignore lint/suspicious/noExplicitAny: profile shape from better-auth varies by provider
+      mapProfileToUser: (profile: any) => ({
         username:
-          (profile.login as string) ??
-          (profile.name as string) ??
-          `user-${Date.now()}`,
+          profile.login ?? profile.name ?? `user-${Date.now()}`,
       }),
     },
   },
