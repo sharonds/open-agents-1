@@ -239,6 +239,13 @@
       "when": 1776800000000,
       "tag": "0033_add_is_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1776846021763,
+      "tag": "0034_secret_peter_parker",
+      "breakpoints": true
     }
   ]
 }
