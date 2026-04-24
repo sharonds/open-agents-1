@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { cache } from "react";
 import { auth } from "@/lib/auth/config";
+import { getAuthProviderForUser } from "./provider";
 import type { Session } from "./types";
 
 function extractUsername(user: {
@@ -25,7 +26,7 @@ export const getServerSession = cache(
 
     return {
       created: baSession.session.createdAt.getTime(),
-      authProvider: "vercel",
+      authProvider: await getAuthProviderForUser(baSession.user.id),
       user: {
         id: baSession.user.id,
         username: extractUsername(baSession.user),

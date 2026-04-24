@@ -27,7 +27,11 @@ async function revokeVercelToken(params: {
 export async function signOut(): Promise<void> {
   const session = await getServerSession();
 
-  if (session?.user?.id && (await hasVercelAccount(session.user.id))) {
+  if (
+    session?.authProvider === "vercel" &&
+    session.user.id &&
+    (await hasVercelAccount(session.user.id))
+  ) {
     try {
       const clientId = process.env.NEXT_PUBLIC_VERCEL_APP_CLIENT_ID;
       const clientSecret = process.env.VERCEL_APP_CLIENT_SECRET;

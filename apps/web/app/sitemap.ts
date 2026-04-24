@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl = "https://agents.sharonsciammas.com";
+import { getSiteUrl } from "@/lib/site-url";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
+  const siteUrl = getSiteUrl();
 
   return [
     {

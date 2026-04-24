@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { getSiteUrlObject } from "@/lib/site-url";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -40,11 +41,7 @@ const isPreviewDeployment = process.env.VERCEL_ENV === "preview";
 const faviconPath = isPreviewDeployment
   ? "/favicon-preview.svg"
   : "/favicon.ico";
-const productionUrl =
-  process.env.VERCEL_PROJECT_PRODUCTION_URL ??
-  process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ??
-  "agents.sharonsciammas.com";
-const metadataBase = new URL(`https://${productionUrl}`);
+const metadataBase = getSiteUrlObject();
 
 const siteDescription =
   "Sharon Sciammas' live Vercel Open Agents deployment: a refined reference AI agent app with documented setup fixes, sandboxed execution, and GitHub PR automation.";
@@ -52,7 +49,7 @@ const ogImage = {
   url: "/opengraph-image",
   width: 1200,
   height: 630,
-  alt: "Sharon Sciammas' Vercel Open Agents deployment",
+  alt: "Sharon Sciammas' Open Agents deployment for real-world evaluation",
 };
 
 export const metadata: Metadata = {
@@ -72,9 +69,6 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Sharon Sciammas", url: "https://sharonsciammas.com" }],
   creator: "Sharon Sciammas",
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     title: "Sharon Sciammas' Vercel Open Agents deployment",
     description: siteDescription,
