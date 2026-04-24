@@ -389,10 +389,17 @@ describe("GitHub credential brokering", () => {
         "*": [],
       },
     });
-    expect(createCalls[0]?.source).toEqual({
-      type: "git",
-      url: "https://github.com/open-agents/example",
-      revision: "main",
+    expect(createCalls[0]?.source).toBeUndefined();
+    expect(runCommandCalls[0]).toEqual({
+      cmd: "git",
+      args: [
+        "clone",
+        "--branch",
+        "main",
+        "https://github.com/open-agents/example",
+        ".",
+      ],
+      cwd: "/vercel/sandbox",
     });
   });
 
