@@ -58,7 +58,7 @@ const DEPLOY_TEMPLATE_URL = (() => {
 export const metadata: Metadata = {
   title: "Deploy your own",
   description:
-    "Deploy your own copy of Open Harness to sign in with your own account.",
+    "Deploy your own copy of Sharon's Open Agents fork with your own Vercel, GitHub, database, and sandbox configuration.",
 };
 
 export default function DeployYourOwnPage() {
@@ -66,15 +66,16 @@ export default function DeployYourOwnPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-24 text-foreground">
       <div className="flex max-w-xl flex-col items-center text-center">
         <p className="text-sm font-medium text-muted-foreground">
-          Open Harness
+          Sharon&apos;s Open Agents fork
         </p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight">
           Deploy your own
         </h1>
         <p className="mt-4 text-base leading-7 text-muted-foreground">
-          This hosted deployment only supports sign-ins from @vercel.com email
-          addresses. To use the template with your own account, deploy your own
-          copy.
+          This hosted deployment lets you try the flow with Vercel or GitHub,
+          but it still runs on Sharon&apos;s managed infrastructure. Deploy your
+          own copy when you want your own OAuth apps, database, sandbox
+          settings, rate limits, and production controls.
         </p>
         <Button asChild className="mt-8" size="lg">
           <Link href={DEPLOY_TEMPLATE_URL} rel="noreferrer" target="_blank">

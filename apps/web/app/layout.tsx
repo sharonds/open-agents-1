@@ -40,28 +40,48 @@ const isPreviewDeployment = process.env.VERCEL_ENV === "preview";
 const faviconPath = isPreviewDeployment
   ? "/favicon-preview.svg"
   : "/favicon.ico";
-const metadataBase =
-  process.env.VERCEL_ENV === "production" &&
-  process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`)
-    : process.env.VERCEL_URL
-      ? new URL(`https://${process.env.VERCEL_URL}`)
-      : new URL("https://open-agents.dev");
+const productionUrl =
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+  process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ??
+  "agents.sharonsciammas.com";
+const metadataBase = new URL(`https://${productionUrl}`);
 
 const siteDescription =
-  "Sharon's deployment of Vercel Open Agents: a fork of the reference AI agent app with 4 deployment bugs patched and a deploy guide for builders.";
+  "Sharon Sciammas' Open Agents deployment: a working fork of Vercel's reference AI agent app with 4 deployment blockers fixed and documented for builders.";
+const ogImage = {
+  url: "/opengraph-image",
+  width: 1200,
+  height: 630,
+  alt: "Sharon Sciammas' Open Agents deployment with 4 deployment blockers fixed",
+};
 
 export const metadata: Metadata = {
   metadataBase,
   title: {
-    default: "Sharon's Open Agents Deployment",
-    template: "%s | Sharon's Open Agents Deployment",
+    default: "Sharon Sciammas' Open Agents Deployment",
+    template: "%s | Sharon Sciammas' Open Agents Deployment",
   },
   description: siteDescription,
+  keywords: [
+    "Open Agents",
+    "Vercel Open Agents",
+    "Vercel Sandbox",
+    "AI coding agent",
+    "GitHub pull request agent",
+    "Sharon Sciammas",
+  ],
+  authors: [{ name: "Sharon Sciammas", url: "https://sharonsciammas.com" }],
+  creator: "Sharon Sciammas",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Sharon's deployment of Vercel Open Agents",
+    title: "Sharon Sciammas' Open Agents deployment",
     description: siteDescription,
     type: "website",
+    url: "/",
+    siteName: "Sharon Sciammas Open Agents",
+    images: [ogImage],
   },
   icons: {
     icon: faviconPath,
@@ -69,8 +89,20 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sharon's deployment of Vercel Open Agents",
+    title: "Sharon Sciammas' Open Agents deployment",
     description: siteDescription,
+    images: [ogImage.url],
+  },
+  robots: {
+    index: !isPreviewDeployment,
+    follow: !isPreviewDeployment,
+    googleBot: {
+      index: !isPreviewDeployment,
+      follow: !isPreviewDeployment,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 

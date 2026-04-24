@@ -20,6 +20,15 @@ async function getVercelAccountId(userId: string): Promise<string> {
   return rows[0]?.accountId ?? "";
 }
 
+export async function hasVercelAccount(userId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "vercel")))
+    .limit(1);
+  return rows.length > 0;
+}
+
 /**
  * Get a valid Vercel access token plus CLI-relevant metadata for the given user.
  * better-auth auto-refreshes expired tokens via stored refresh token.
@@ -67,7 +76,11 @@ export async function getUserVercelToken(
 
     return result?.accessToken ?? null;
   } catch (error) {
-    console.error("Error fetching Vercel token:", error);
+    const isExpected =
+      error instanceof Error && error.message === "Account not found";
+    if (!isExpected) {
+      console.error("Error fetching Vercel token:", error);
+    }
     return null;
   }
 }

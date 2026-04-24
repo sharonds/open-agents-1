@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Sharon's deployment of Vercel Open Agents with 4 deployment bugs patched";
+  "Sharon Sciammas' Open Agents deployment with 4 deployment blockers fixed";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const runtime = "edge";
@@ -112,7 +112,7 @@ export default function OgImage() {
                 color: "rgba(255, 255, 255, 0.5)",
               }}
             >
-              Sharon&apos;s Open Agents fork
+              Sharon Sciammas · Open Agents fork
             </span>
           </div>
 
@@ -126,7 +126,7 @@ export default function OgImage() {
               color: "#ffffff",
             }}
           >
-            Sharon&apos;s deployment of Vercel Open Agents
+            A working Open Agents fork
           </div>
 
           {/* Subtitle */}
@@ -139,8 +139,7 @@ export default function OgImage() {
               maxWidth: 720,
             }}
           >
-            Forked from Vercel Labs, patched in my fork, and deployed end-to-end
-            with a public guide for builders.
+            4 deployment blockers fixed, documented, and linked to the source.
           </div>
         </div>
 
