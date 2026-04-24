@@ -47,12 +47,12 @@ const productionUrl =
 const metadataBase = new URL(`https://${productionUrl}`);
 
 const siteDescription =
-  "Sharon Sciammas' Open Agents deployment: a working fork of Vercel's reference AI agent app with 4 deployment blockers fixed and documented for builders.";
+  "Sharon Sciammas' live Vercel Open Agents deployment: a refined reference AI agent app with documented setup fixes, sandboxed execution, and GitHub PR automation.";
 const ogImage = {
   url: "/opengraph-image",
   width: 1200,
   height: 630,
-  alt: "Sharon Sciammas' Open Agents deployment with 4 deployment blockers fixed",
+  alt: "Sharon Sciammas' Vercel Open Agents deployment",
 };
 
 export const metadata: Metadata = {
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Sharon Sciammas' Open Agents deployment",
+    title: "Sharon Sciammas' Vercel Open Agents deployment",
     description: siteDescription,
     type: "website",
     url: "/",
@@ -89,7 +89,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sharon Sciammas' Open Agents deployment",
+    title: "Sharon Sciammas' Vercel Open Agents deployment",
     description: siteDescription,
     images: [ogImage.url],
   },
