@@ -48,20 +48,29 @@ const metadataBase =
       ? new URL(`https://${process.env.VERCEL_URL}`)
       : new URL("https://open-agents.dev");
 
+const siteDescription =
+  "Sharon's deployment of Vercel Open Agents: a fork of the reference AI agent app with 4 deployment bugs patched and a deploy guide for builders.";
+
 export const metadata: Metadata = {
   metadataBase,
   title: {
-    default: "Open Agents",
-    template: "%s | Open Agents",
+    default: "Sharon's Open Agents Deployment",
+    template: "%s | Sharon's Open Agents Deployment",
   },
-  description:
-    "Spawn coding agents that run infinitely in the cloud. Powered by AI SDK, Gateway, Sandbox, and Workflow SDK.",
+  description: siteDescription,
+  openGraph: {
+    title: "Sharon's deployment of Vercel Open Agents",
+    description: siteDescription,
+    type: "website",
+  },
   icons: {
     icon: faviconPath,
     shortcut: faviconPath,
   },
   twitter: {
     card: "summary_large_image",
+    title: "Sharon's deployment of Vercel Open Agents",
+    description: siteDescription,
   },
 };
 
