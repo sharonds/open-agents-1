@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Sharon Sciammas' Open Agents deployment with 4 deployment blockers fixed";
+  "Sharon Sciammas' Open Agents deployment for real-world evaluation";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const runtime = "edge";
@@ -112,7 +112,7 @@ export default function OgImage() {
                 color: "rgba(255, 255, 255, 0.5)",
               }}
             >
-              Sharon Sciammas · Open Agents fork
+              Sharon Sciammas · Open Agents deployment
             </span>
           </div>
 
@@ -126,7 +126,7 @@ export default function OgImage() {
               color: "#ffffff",
             }}
           >
-            A working Open Agents fork
+            Open Agents for real-world evaluation
           </div>
 
           {/* Subtitle */}
@@ -139,7 +139,8 @@ export default function OgImage() {
               maxWidth: 720,
             }}
           >
-            4 deployment blockers fixed, documented, and linked to the source.
+            A live Vercel reference agent deployment with documented setup
+            fixes.
           </div>
         </div>
 

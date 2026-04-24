@@ -4,16 +4,16 @@ import { getServerSession } from "@/lib/session/get-server-session";
 import { HomePage } from "./home-page";
 
 const pageDescription =
-  "Sign in with Vercel or GitHub to try Sharon Sciammas' Open Agents fork, a deployed Vercel reference AI agent with 4 blockers fixed and documented.";
+  "Evaluate Sharon Sciammas' live Vercel Open Agents deployment: a reference app with documented setup fixes, GitHub automation, and sandboxed execution.";
 
 export const metadata: Metadata = {
-  title: "Working Open Agents fork",
+  title: "Vercel Open Agents deployment",
   description: pageDescription,
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "A working Open Agents fork, documented by Sharon Sciammas",
+    title: "Open Agents for real-world evaluation",
     description: pageDescription,
     url: "/",
     images: [
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "A working Open Agents fork",
+    title: "Vercel Open Agents deployment",
     description: pageDescription,
     images: ["/opengraph-image"],
   },

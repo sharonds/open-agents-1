@@ -19,24 +19,24 @@ const SHARON_HOME_URL = "https://sharonsciammas.com";
 
 const featureStrip = [
   {
-    label: "8-hour deploy",
-    description: "Forked, debugged, patched, and documented end-to-end",
+    label: "Production deployed",
+    description: "Reference architecture running on a live stack",
   },
   {
-    label: "4 blockers fixed",
-    description: "Auth, sandbox snapshot, clone flow, and stale docs",
+    label: "4 blockers resolved",
+    description: "Auth, sandbox, clone flow, and setup documentation",
   },
   {
-    label: "Real GitHub flow",
-    description: "Branches, commits, pushes, and PRs on repos you choose",
+    label: "GitHub workflow",
+    description: "Branch, commit, push, and pull-request automation",
   },
 ] as const;
 
 const proofPoints = [
-  ["Fork", "sharonds/open-agents-1"],
-  ["Guide", "4 patches + service map"],
+  ["Deployment", "Live agent environment"],
+  ["Engineering", "4 production blockers resolved"],
   ["Stack", "Sandbox, Workflow, Neon, Upstash"],
-  ["Author", "Sharon Sciammas"],
+  ["Documentation", "Public deploy guide + source"],
 ] as const;
 
 const fixes = [
@@ -90,16 +90,16 @@ export function SignedOutHero() {
           <div className="mx-auto grid max-w-[1320px] gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(340px,1fr)] lg:items-end lg:gap-10">
             <div className="max-w-[780px] pb-0 md:pb-10">
               <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-(--l-fg-3)">
-                Sharon Sciammas Lab · Vercel Labs fork · April 2026
+                Sharon Sciammas Lab · Open Agents Deployment · April 2026
               </p>
               <h1 className="mt-5 text-balance text-4xl font-semibold leading-[1.03] tracking-tighter sm:text-5xl md:text-6xl">
-                A working Open Agents fork, with the deploy path documented.
+                Open Agents for real-world evaluation.
               </h1>
               <p className="mt-4 max-w-[680px] text-pretty text-base leading-relaxed text-(--l-fg-2) sm:mt-6 sm:text-xl">
-                I&apos;m Sharon Sciammas. I forked Vercel&apos;s reference AI
-                agent app, fixed 4 deployment blockers in my fork, and wrote the
-                guide I wanted before I started. Sign in with Vercel or GitHub,
-                connect a test repo, and the agent can open a real PR.
+                A live deployment of Vercel&apos;s open-source AI coding agent
+                reference app, refined by Sharon Sciammas with documented fixes
+                for 4 deployment blockers. Sign in, connect a test repository,
+                and evaluate the GitHub PR workflow.
               </p>
 
               <div
@@ -151,22 +151,20 @@ export function SignedOutHero() {
                   What this is
                 </p>
                 <h2 className="mt-4 max-w-[760px] text-balance text-3xl font-semibold tracking-tighter sm:text-4xl">
-                  Not a polished demo. A reproducible deploy story.
+                  A working reference implementation with a clear setup path.
                 </h2>
                 <p className="mt-5 max-w-[760px] text-pretty text-lg leading-relaxed text-(--l-fg-2)">
                   <strong className="font-medium text-(--l-fg)">
                     Open Agents is Vercel&apos;s open-source reference
                     implementation of the autonomous coding agent pattern.
                   </strong>{" "}
-                  You chat with an AI. It runs as a durable workflow in an
-                  isolated Vercel Sandbox VM. It can clone your GitHub repos,
-                  create branches, push commits, and open PRs, all on its own.
+                  It pairs a chat interface with durable workflows, isolated
+                  sandbox execution, and GitHub automation.
                 </p>
                 <p className="mt-5 max-w-[760px] text-pretty text-base leading-relaxed text-(--l-fg-2)">
-                  This instance is my deployment. I kept the useful Vercel
-                  reference architecture, fixed the blocking edges I hit, and
-                  linked every claim to the fork, the deploy guide, or the
-                  longer write-up on my site.
+                  This deployment keeps the reference architecture intact while
+                  documenting the fixes required to run it outside the original
+                  environment.
                 </p>
               </div>
 
@@ -197,14 +195,14 @@ export function SignedOutHero() {
             <div className="grid gap-10 md:grid-cols-[320px_minmax(0,1fr)]">
               <div>
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-(--l-fg-3)">
-                  What I fixed
+                  Deployment fixes
                 </p>
                 <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tighter sm:text-4xl">
-                  Four deployment blockers, patched in the fork.
+                  Four blockers resolved and documented.
                 </h2>
                 <p className="mt-4 text-sm leading-relaxed text-(--l-fg-2)">
-                  Each item links to the exact guide section so builders can
-                  reproduce the fix instead of reading marketing copy.
+                  Each item links to the exact implementation note in the deploy
+                  guide.
                 </p>
               </div>
 
@@ -247,7 +245,7 @@ export function SignedOutHero() {
                 Authentication
               </p>
               <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tighter sm:text-4xl">
-                You do not need a Vercel login to try the GitHub flow.
+                Try the GitHub flow without a Vercel login.
               </h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -256,8 +254,8 @@ export function SignedOutHero() {
                   Sign in with Vercel
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-(--l-fg-2)">
-                  Best if you also want the app to look up Vercel projects for a
-                  selected GitHub repo.
+                  Use this path when you want project lookup and Vercel-linked
+                  context for a selected repository.
                 </p>
               </article>
               <article className="border border-(--l-border) bg-(--l-surface) p-5">
@@ -265,9 +263,9 @@ export function SignedOutHero() {
                   Sign in with GitHub
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-(--l-fg-2)">
-                  Best for a quick repo-connected trial. Email and Google auth
-                  are feasible future additions, but they need a verified mail
-                  flow and account-policy work before they belong here.
+                  Use this path for a streamlined repo-connected evaluation. No
+                  Vercel login is required. Email and Google auth are better
+                  handled as a separate account-policy project.
                 </p>
               </article>
             </div>
@@ -279,12 +277,11 @@ export function SignedOutHero() {
             <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
               <div>
                 <div className="font-mono text-xs uppercase tracking-[0.22em] text-(--l-fg-4)">
-                  Sharon&apos;s Open Agents deployment
+                  Open Agents deployment lab
                 </div>
                 <p className="mt-3 max-w-[620px] text-sm leading-relaxed text-(--l-fg-2)">
-                  Built as a public lab by Sharon Sciammas. This page explains
-                  what was changed, where the source lives, and how to review
-                  the deployment notes before connecting a repo.
+                  A public technical lab by Sharon Sciammas, with source,
+                  deployment notes, and evaluation paths in one place.
                 </p>
               </div>
 
@@ -334,7 +331,7 @@ export function SignedOutHero() {
                     rel="noopener noreferrer"
                     className="transition-colors hover:text-(--l-fg)"
                   >
-                    Sharon&apos;s fork
+                    Sharon&apos;s source repo
                   </a>
                   <a
                     href={DEPLOY_GUIDE_URL}
@@ -419,7 +416,7 @@ export function SignedOutHero() {
                   rel="noopener noreferrer"
                   className="transition-colors hover:text-(--l-fg)"
                 >
-                  → My fork (source)
+                  → Sharon&apos;s source repo
                 </a>
                 <span className="text-(--l-fg-4)">|</span>
                 <a
@@ -434,9 +431,8 @@ export function SignedOutHero() {
 
               <p className="mt-5 max-w-[760px] text-xs leading-relaxed text-(--l-fg-3)">
                 Not affiliated with Vercel. Open Agents is MIT licensed.
-                Attribution: vercel-labs/open-agents. Do not connect a repo
-                unless you are comfortable with the agent creating branches,
-                commits, and pull requests in that repository.
+                Attribution: vercel-labs/open-agents. Use a test repository when
+                evaluating automated branches, commits, and pull requests.
               </p>
             </div>
           </div>
