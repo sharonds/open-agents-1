@@ -22,7 +22,7 @@ const sessions: readonly FakeSession[] = [
     branch: "feat/auth-flow",
     prompt: "Build the auth flow with GitHub OAuth",
     summary:
-      "I\u2019ve set up the GitHub OAuth flow. Created the auth route handler, callback endpoint, and session middleware. Typecheck passes clean.",
+      "I\u2019ve drafted the GitHub OAuth flow, added the route handler, callback endpoint, and session middleware, and queued checks for review.",
     toolCount: 12,
     todoTotal: 4,
     todoDone: 3,
@@ -39,7 +39,7 @@ const sessions: readonly FakeSession[] = [
     branch: "feat/edge-api",
     prompt: "Refactor the chat API routes to use edge runtime",
     summary:
-      "Migrated 2 routes to edge runtime. Removed Node-only APIs, added runtime exports, and verified with the full CI suite.",
+      "Migrated the chat routes toward edge runtime, removed Node-only APIs, and prepared the diff for validation.",
     toolCount: 8,
     todoTotal: 3,
     todoDone: 3,
@@ -52,7 +52,7 @@ const sessions: readonly FakeSession[] = [
     branch: "fix/test-suite",
     prompt: "Run the test suite and fix any failing tests",
     summary:
-      "Found and fixed 4 failing tests across 3 files. All 47 tests pass now.",
+      "Found failing coverage around chat state, updated the affected tests, and left a focused change summary.",
     toolCount: 14,
     todoTotal: 4,
     todoDone: 4,

@@ -21,7 +21,7 @@ const featureStrip = [
   },
   {
     label: "Isolated sandbox",
-    description: "The agent can't hurt anything",
+    description: "Work runs away from your local machine",
   },
   {
     label: "Real PRs",
@@ -133,8 +133,8 @@ export function SignedOutHero() {
                 </p>
                 <p className="mt-5 max-w-[760px] text-pretty text-base leading-relaxed text-(--l-fg-2)">
                   This instance is my fork. I hit 4 real bugs deploying it. I
-                  patched them in my fork, opened the PRs upstream, and
-                  published a deploy guide so you don&apos;t hit the same wall.
+                  patched them in my fork and published a deploy guide so you
+                  don&apos;t hit the same wall.
                 </p>
               </div>
 
