@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/session/get-server-session";
+import { getSiteUrl } from "@/lib/site-url";
 import { HomePage } from "./home-page";
 
 const pageDescription =
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Sharon Sciammas' Open Agents deployment",
+        alt: "Sharon Sciammas' Open Agents deployment for real-world evaluation",
       },
     ],
   },
@@ -39,7 +40,7 @@ const landingJsonLd = {
   name: "Sharon Sciammas' Open Agents deployment",
   applicationCategory: "DeveloperApplication",
   operatingSystem: "Web",
-  url: "https://agents.sharonsciammas.com",
+  url: getSiteUrl(),
   author: {
     "@type": "Person",
     name: "Sharon Sciammas",

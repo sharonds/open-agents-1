@@ -19,7 +19,7 @@ const SHARON_HOME_URL = "https://sharonsciammas.com";
 
 const featureStrip = [
   {
-    label: "Production deployed",
+    label: "Live deployment",
     description: "Reference architecture running on a live stack",
   },
   {
@@ -34,7 +34,7 @@ const featureStrip = [
 
 const proofPoints = [
   ["Deployment", "Live agent environment"],
-  ["Engineering", "4 production blockers resolved"],
+  ["Engineering", "4 deployment blockers resolved"],
   ["Stack", "Sandbox, Workflow, Neon, Upstash"],
   ["Documentation", "Public deploy guide + source"],
 ] as const;
