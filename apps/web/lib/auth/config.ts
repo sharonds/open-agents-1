@@ -68,6 +68,15 @@ function getAllowedAuthHosts(): string[] {
 const authBaseURLFallback = getAuthBaseURLFallback();
 const authAllowedHosts = getAllowedAuthHosts();
 
+function getProfileField(profile: unknown, field: string): string | undefined {
+  if (!profile || typeof profile !== "object" || !(field in profile)) {
+    return;
+  }
+
+  const value = (profile as Record<string, unknown>)[field];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: {
@@ -115,22 +124,22 @@ export const auth = betterAuth({
       clientSecret: process.env.VERCEL_APP_CLIENT_SECRET ?? "",
       scope: ["openid", "email", "profile", "offline_access"],
       overrideUserInfoOnSignIn: true,
-      // biome-ignore lint/suspicious/noExplicitAny: profile shape from better-auth varies by provider
-      mapProfileToUser: (profile: any) => ({
+      mapProfileToUser: (profile: unknown) => ({
         username:
-          profile.preferred_username ??
-          profile.name ??
-          profile.email ??
+          getProfileField(profile, "preferred_username") ??
+          getProfileField(profile, "name") ??
+          getProfileField(profile, "email") ??
           `user-${Date.now()}`,
       }),
     },
     github: {
       clientId: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID ?? "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
-      // biome-ignore lint/suspicious/noExplicitAny: profile shape from better-auth varies by provider
-      mapProfileToUser: (profile: any) => ({
+      mapProfileToUser: (profile: unknown) => ({
         username:
-          profile.login ?? profile.name ?? `user-${Date.now()}`,
+          getProfileField(profile, "login") ??
+          getProfileField(profile, "name") ??
+          `user-${Date.now()}`,
       }),
     },
   },
