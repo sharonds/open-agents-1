@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Open Agents — Spawn coding agents that run in the cloud";
+export const alt =
+  "Sharon's deployment of Vercel Open Agents with 4 deployment bugs patched";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const runtime = "edge";
@@ -111,7 +112,7 @@ export default function OgImage() {
                 color: "rgba(255, 255, 255, 0.5)",
               }}
             >
-              Open Agents
+              Sharon&apos;s Open Agents fork
             </span>
           </div>
 
@@ -125,7 +126,7 @@ export default function OgImage() {
               color: "#ffffff",
             }}
           >
-            Open Agents.
+            Sharon&apos;s deployment of Vercel Open Agents
           </div>
 
           {/* Subtitle */}
@@ -138,7 +139,8 @@ export default function OgImage() {
               maxWidth: 720,
             }}
           >
-            Spawn coding agents that run infinitely in the cloud.
+            Forked from Vercel Labs, patched in my fork, and deployed end-to-end
+            with a public guide for builders.
           </div>
         </div>
 
@@ -170,7 +172,7 @@ export default function OgImage() {
                 letterSpacing: "0.01em",
               }}
             >
-              open-agents.dev
+              agents.sharonsciammas.com
             </span>
           </div>
         </div>

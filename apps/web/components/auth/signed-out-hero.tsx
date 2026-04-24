@@ -115,7 +115,14 @@ export function SignedOutHero() {
           <div className="mx-auto max-w-[1320px] border-t border-(--l-border-subtle) px-6 py-14 sm:px-10 md:py-20">
             <div className="grid gap-10 md:grid-cols-[minmax(0,0.9fr)_minmax(360px,1fr)]">
               <div>
-                <p className="max-w-[760px] text-pretty text-lg leading-relaxed text-(--l-fg-2)">
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-(--l-fg-3)">
+                  What this is
+                </p>
+                <h2 className="mt-4 max-w-[760px] text-balance text-3xl font-semibold tracking-tighter sm:text-4xl">
+                  A deployable reference agent, with the deployment path
+                  documented.
+                </h2>
+                <p className="mt-5 max-w-[760px] text-pretty text-lg leading-relaxed text-(--l-fg-2)">
                   <strong className="font-medium text-(--l-fg)">
                     Open Agents is Vercel&apos;s open-source reference
                     implementation of the autonomous coding agent pattern.
